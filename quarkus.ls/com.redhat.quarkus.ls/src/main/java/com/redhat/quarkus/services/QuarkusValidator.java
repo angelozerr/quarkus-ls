@@ -14,21 +14,21 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.redhat.quarkus.commons.EnumItem;
+import org.eclipse.lsp4j.Diagnostic;
+import org.eclipse.lsp4j.DiagnosticSeverity;
+import org.eclipse.lsp4j.Range;
+import org.eclipse.lsp4j.jsonrpc.CancelChecker;
+
 import com.redhat.quarkus.commons.ExtendedConfigDescriptionBuildItem;
 import com.redhat.quarkus.commons.QuarkusProjectInfo;
 import com.redhat.quarkus.model.Node;
 import com.redhat.quarkus.model.Node.NodeType;
 import com.redhat.quarkus.model.PropertiesModel;
 import com.redhat.quarkus.model.Property;
+import com.redhat.quarkus.model.valuesdef.PropertyValueDefinitionManger;
 import com.redhat.quarkus.settings.QuarkusValidationSettings;
 import com.redhat.quarkus.utils.PositionUtils;
 import com.redhat.quarkus.utils.QuarkusPropertiesUtils;
-
-import org.eclipse.lsp4j.Diagnostic;
-import org.eclipse.lsp4j.DiagnosticSeverity;
-import org.eclipse.lsp4j.Range;
-import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 
 /**
  * Quarkus validator to validate properties declared in application.properties.
@@ -45,12 +45,14 @@ class QuarkusValidator {
 
 	private final QuarkusValidationSettings validationSettings;
 	private final Map<String, List<Property>> existingProperties;
+	private final PropertyValueDefinitionManger valueDefinitionManger;
 
 	public QuarkusValidator(QuarkusProjectInfo projectInfo, List<Diagnostic> diagnostics,
-			QuarkusValidationSettings validationSettings) {
+			QuarkusValidationSettings validationSettings, PropertyValueDefinitionManger valueDefinitionManger) {
 		this.projectInfo = projectInfo;
 		this.diagnostics = diagnostics;
 		this.validationSettings = validationSettings;
+		this.valueDefinitionManger = valueDefinitionManger;
 		this.existingProperties = new HashMap<String, List<Property>>();
 	}
 
@@ -128,11 +130,6 @@ class QuarkusValidator {
 
 	private void validatePropertyValue(String propertyName, ExtendedConfigDescriptionBuildItem metadata,
 			Property property) {
-		
-		if (property.getValue() == null) {
-			return;
-		}
-
 		DiagnosticSeverity severity = validationSettings.getValue().getDiagnosticSeverity(propertyName);
 		if (severity == null) {
 			// The value validation must be ignored for this property name
@@ -143,9 +140,9 @@ class QuarkusValidator {
 		if (value == null || value.isEmpty()) {
 			return;
 		}
-		
+
 		String errorMessage = null;
-		if (metadata.getEnums() != null && metadata.getEnumItem(value) == null) {
+		if (!isValidEnum(metadata, property.getOwnerModel(), value)) {
 			errorMessage = "Invalid enum value: '" + value + "' is invalid for type " + metadata.getType();
 		} else if (isValueTypeMismatch(metadata, value)) {
 			errorMessage = "Type mismatch: " + metadata.getType() + " expected";
@@ -156,22 +153,32 @@ class QuarkusValidator {
 		}
 	}
 
+	private boolean isValidEnum(ExtendedConfigDescriptionBuildItem metadata, PropertiesModel model, String value) {
+		if (!metadata.isValidEnum(value)) {
+			return false;
+		}
+		if (valueDefinitionManger != null) {
+			return valueDefinitionManger.isValidEnum(metadata, model, value);
+		}
+		return true;
+	}
+
 	/**
 	 * Returns true only if <code>value</code> is a valid value for the property
 	 * defined by <code>metadata</code>
+	 * 
 	 * @param metadata metadata defining a property
 	 * @param value    value to check
 	 * @return true only if <code>value</code> is a valid value for the property
-	 * defined by <code>metadata</code>
+	 *         defined by <code>metadata</code>
 	 */
 	private static boolean isValueTypeMismatch(ExtendedConfigDescriptionBuildItem metadata, String value) {
-		return !isBuildtimePlaceholder(value) &&
-		((metadata.isIntegerType() && !isIntegerString(value)) ||
-		(metadata.isFloatType() && !isFloatString(value)) ||
-		(metadata.isBooleanType() && !isBooleanString(value)) ||
-		(metadata.isDoubleType() && !isDoubleString(value)) ||
-		(metadata.isLongType() && !isLongString(value)) ||
-		(metadata.isShortType() && !isShortString(value)));
+		return !isBuildtimePlaceholder(value) && ((metadata.isIntegerType() && !isIntegerString(value))
+				|| (metadata.isFloatType() && !isFloatString(value))
+				|| (metadata.isBooleanType() && !isBooleanString(value))
+				|| (metadata.isDoubleType() && !isDoubleString(value))
+				|| (metadata.isLongType() && !isLongString(value))
+				|| (metadata.isShortType() && !isShortString(value)));
 	}
 
 	private static boolean isBooleanString(String str) {

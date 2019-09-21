@@ -21,6 +21,7 @@ import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 
 import com.redhat.quarkus.commons.QuarkusProjectInfo;
 import com.redhat.quarkus.model.PropertiesModel;
+import com.redhat.quarkus.model.valuesdef.PropertyValueDefinitionManger;
 import com.redhat.quarkus.settings.QuarkusCompletionSettings;
 import com.redhat.quarkus.settings.QuarkusHoverSettings;
 import com.redhat.quarkus.settings.QuarkusValidationSettings;
@@ -38,11 +39,18 @@ public class QuarkusLanguageService {
 	private final QuarkusHover hover;
 	private final QuarkusDiagnostics diagnostics;
 
+	private PropertyValueDefinitionManger valueDefinitionManger;
+
 	public QuarkusLanguageService() {
+		this(null);
+	}
+
+	public QuarkusLanguageService(PropertyValueDefinitionManger valueDefinitionManger) {
 		this.completions = new QuarkusCompletions();
 		this.symbolsProvider = new QuarkusSymbolsProvider();
 		this.hover = new QuarkusHover();
 		this.diagnostics = new QuarkusDiagnostics();
+		this.valueDefinitionManger = valueDefinitionManger;
 	}
 
 	/**
@@ -57,7 +65,8 @@ public class QuarkusLanguageService {
 	 */
 	public CompletionList doComplete(PropertiesModel document, Position position, QuarkusProjectInfo projectInfo,
 			QuarkusCompletionSettings completionSettings, CancelChecker cancelChecker) {
-		return completions.doComplete(document, position, projectInfo, completionSettings, cancelChecker);
+		return completions.doComplete(document, position, projectInfo, completionSettings, getValueDefinitionManger(),
+				cancelChecker);
 	}
 
 	/**
@@ -71,7 +80,7 @@ public class QuarkusLanguageService {
 	 */
 	public Hover doHover(PropertiesModel document, Position position, QuarkusProjectInfo projectInfo,
 			QuarkusHoverSettings hoverSettings) {
-		return hover.doHover(document, position, projectInfo, hoverSettings);
+		return hover.doHover(document, position, projectInfo, hoverSettings, getValueDefinitionManger());
 	}
 
 	/**
@@ -103,11 +112,19 @@ public class QuarkusLanguageService {
 	 * @param document           the properties model.
 	 * @param projectInfo        the Quarkus properties
 	 * @param validationSettings the validation settings.
-	 * @param cancelChecker            the cancel checker.
+	 * @param cancelChecker      the cancel checker.
 	 * @return the result of the validation.
 	 */
 	public List<Diagnostic> doDiagnostics(PropertiesModel document, QuarkusProjectInfo projectInfo,
 			QuarkusValidationSettings validationSettings, CancelChecker cancelChecker) {
-		return diagnostics.doDiagnostics(document, projectInfo, validationSettings, cancelChecker);
+		return diagnostics.doDiagnostics(document, projectInfo, validationSettings, getValueDefinitionManger(),
+				cancelChecker);
+	}
+
+	PropertyValueDefinitionManger getValueDefinitionManger() {
+		if (valueDefinitionManger == null) {
+			valueDefinitionManger = new PropertyValueDefinitionManger(true);
+		}
+		return valueDefinitionManger;
 	}
 }

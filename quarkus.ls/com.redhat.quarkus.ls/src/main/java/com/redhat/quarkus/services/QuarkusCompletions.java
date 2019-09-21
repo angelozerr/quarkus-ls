@@ -42,6 +42,7 @@ import com.redhat.quarkus.model.Node.NodeType;
 import com.redhat.quarkus.model.PropertiesModel;
 import com.redhat.quarkus.model.Property;
 import com.redhat.quarkus.model.PropertyKey;
+import com.redhat.quarkus.model.valuesdef.PropertyValueDefinitionManger;
 import com.redhat.quarkus.settings.QuarkusCompletionSettings;
 import com.redhat.quarkus.utils.DocumentationUtils;
 import com.redhat.quarkus.utils.QuarkusPropertiesUtils;
@@ -72,7 +73,8 @@ class QuarkusCompletions {
 	 * @return completion list for the given position
 	 */
 	public CompletionList doComplete(PropertiesModel document, Position position, QuarkusProjectInfo projectInfo,
-			QuarkusCompletionSettings completionSettings, CancelChecker cancelChecker) {
+			QuarkusCompletionSettings completionSettings, PropertyValueDefinitionManger valueDefinitionManger,
+			CancelChecker cancelChecker) {
 		CompletionList list = new CompletionList();
 		int offset = -1;
 		Node node = null;
@@ -94,11 +96,13 @@ class QuarkusCompletions {
 		case ASSIGN:
 		case PROPERTY_VALUE:
 			// completion on property value
-			collectPropertyValueSuggestions(node, document, projectInfo, completionSettings, list);
+			collectPropertyValueSuggestions(node, document, projectInfo, completionSettings, valueDefinitionManger,
+					list);
 			break;
 		default:
 			// completion on property key
-			collectPropertyKeySuggestions(offset, node, document, projectInfo, completionSettings, list);
+			collectPropertyKeySuggestions(offset, node, document, projectInfo, completionSettings,
+					valueDefinitionManger, list);
 			break;
 		}
 		return list;
@@ -107,14 +111,16 @@ class QuarkusCompletions {
 	/**
 	 * Collect property keys.
 	 * 
-	 * @param offset             the property key node
+	 * @param offset                the property key node
 	 * @param node
-	 * @param projectInfo        the Quarkus project information
-	 * @param completionSettings the completion settings
-	 * @param list               the completion list to fill
+	 * @param projectInfo           the Quarkus project information
+	 * @param completionSettings    the completion settings
+	 * @param valueDefinitionManger
+	 * @param list                  the completion list to fill
 	 */
 	private static void collectPropertyKeySuggestions(int offset, Node node, PropertiesModel model,
-			QuarkusProjectInfo projectInfo, QuarkusCompletionSettings completionSettings, CompletionList list) {
+			QuarkusProjectInfo projectInfo, QuarkusCompletionSettings completionSettings,
+			PropertyValueDefinitionManger valueDefinitionManger, CompletionList list) {
 
 		boolean snippetsSupported = completionSettings.isCompletionSnippetsSupported();
 		boolean markdownSupported = completionSettings.isDocumentationFormatSupported(MarkupKind.MARKDOWN);
@@ -179,7 +185,7 @@ class QuarkusCompletions {
 			item.setKind(CompletionItemKind.Property);
 
 			String defaultValue = property.getDefaultValue();
-			Collection<EnumItem> enums = getEnums(property);
+			Collection<EnumItem> enums = getEnums(property, model, valueDefinitionManger);
 
 			StringBuilder insertText = new StringBuilder();
 			if (profile != null) {
@@ -267,15 +273,20 @@ class QuarkusCompletions {
 	/**
 	 * Returns the enums values according the property type.
 	 * 
-	 * @param property the Quarkus property
+	 * @param property              the Quarkus property
+	 * @param valueDefinitionManger
 	 * @return the enums values according the property type
 	 */
-	private static Collection<EnumItem> getEnums(ExtendedConfigDescriptionBuildItem property) {
+	private static Collection<EnumItem> getEnums(ExtendedConfigDescriptionBuildItem property, PropertiesModel model,
+			PropertyValueDefinitionManger valueDefinitionManger) {
 		if (property.getEnums() != null) {
 			return property.getEnums();
 		}
 		if (property.isBooleanType()) {
 			return BOOLEAN_ENUMS;
+		}
+		if (valueDefinitionManger != null) {
+			return valueDefinitionManger.getValues(property, model);
 		}
 		return null;
 	}
@@ -283,13 +294,15 @@ class QuarkusCompletions {
 	/**
 	 * Collect property values.
 	 * 
-	 * @param node               the property value node
-	 * @param projectInfo        the Quarkus project information
-	 * @param completionSettings the completion settings
-	 * @param list               the completion list to fill
+	 * @param node                  the property value node
+	 * @param projectInfo           the Quarkus project information
+	 * @param completionSettings    the completion settings
+	 * @param valueDefinitionManger
+	 * @param list                  the completion list to fill
 	 */
 	private static void collectPropertyValueSuggestions(Node node, PropertiesModel model,
-			QuarkusProjectInfo projectInfo, QuarkusCompletionSettings completionSettings, CompletionList list) {
+			QuarkusProjectInfo projectInfo, QuarkusCompletionSettings completionSettings,
+			PropertyValueDefinitionManger valueDefinitionManger, CompletionList list) {
 
 		Node parent = node.getParent();
 		if (parent != null && parent.getNodeType() != Node.NodeType.PROPERTY) {
@@ -300,7 +313,7 @@ class QuarkusCompletions {
 
 		ExtendedConfigDescriptionBuildItem item = QuarkusPropertiesUtils.getProperty(propertyName, projectInfo);
 		if (item != null) {
-			Collection<EnumItem> enums = getEnums(item);
+			Collection<EnumItem> enums = getEnums(item, model, valueDefinitionManger);
 			if (enums != null && !enums.isEmpty()) {
 				boolean markdownSupported = completionSettings.isDocumentationFormatSupported(MarkupKind.MARKDOWN);
 				for (EnumItem e : enums) {
