@@ -17,13 +17,13 @@ import com.redhat.quarkus.jdt.internal.core.QuarkusPropertiesListenerManager;
 /**
  * The activator class controls the Quarkus JDT LS Extension plug-in life cycle
  */
-public class QuarkusActivator implements BundleActivator {
+public class MicroProfileActivator implements BundleActivator {
 
 	// The plug-in ID
 	public static final String PLUGIN_ID = "com.redhat.quarkus.jdt.core";
 
 	// The shared instance
-	private static QuarkusActivator plugin;
+	private static MicroProfileActivator plugin;
 
 	public void start(BundleContext context) throws Exception {
 		plugin = this;
@@ -40,7 +40,7 @@ public class QuarkusActivator implements BundleActivator {
 	 *
 	 * @return the shared instance
 	 */
-	public static QuarkusActivator getDefault() {
+	public static MicroProfileActivator getDefault() {
 		return plugin;
 	}
 

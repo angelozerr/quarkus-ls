@@ -2,6 +2,10 @@
 <?eclipse version="3.5"?>
 <plugin>
    
+   <extension-point id="propertiesProviders" 
+					name="%propertiesProviders.name"
+					schema="schema/propertiesProviders.exsd" />
+
    <!-- Delegate command handler for application.properties file -->
    <extension point="org.eclipse.jdt.ls.core.delegateCommandHandler">
       <delegateCommandHandler class="com.redhat.quarkus.jdt.internal.core.ls.QuarkusDelegateCommandHandler">
@@ -15,6 +19,13 @@
       <delegateCommandHandler class="com.redhat.quarkus.jdt.internal.core.ls.QuarkusDelegateCommandHandlerForJava">
             <command id="quarkus.java.codeLens"/>
        </delegateCommandHandler>
+   </extension>
+
+   <extension point="com.redhat.quarkus.jdt.core.propertiesProviders">
+      <provider class="com.redhat.microprofile.jdt.internal.core.MicroProfileConfigPropertyProvider" />
+      <provider class="com.redhat.microprofile.jdt.internal.core.QuarkusConfigRootProvider" />
+      <provider class="com.redhat.microprofile.jdt.internal.core.QuarkusConfigPropertiesProvider" />
+      <provider class="com.redhat.microprofile.jdt.internal.core.MicroProfileRestClientProvider" />      
    </extension>
 
 </plugin>
