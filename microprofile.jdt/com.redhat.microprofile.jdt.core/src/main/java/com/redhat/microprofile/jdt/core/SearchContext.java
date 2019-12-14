@@ -18,10 +18,13 @@ public class SearchContext {
 
 	private final IJavaProject javaProject;
 
+	private final IPropertiesCollector collector;
+
 	private final Map<String, Object> cache;
 
-	public SearchContext(IJavaProject javaProject) {
+	public SearchContext(IJavaProject javaProject, IPropertiesCollector collector) {
 		this.javaProject = javaProject;
+		this.collector = collector;
 		cache = new HashMap<>();
 	}
 
@@ -37,4 +40,7 @@ public class SearchContext {
 		return javaProject;
 	}
 
+	public IPropertiesCollector getCollector() {
+		return collector;
+	}
 }

@@ -54,7 +54,7 @@ public class PropertiesManagerClassPathKindTest extends BasePropertiesManagerTes
 		Assert.assertEquals(0, infoFromNone.getProperties().size());
 
 		File resteasyJARFile = DependencyUtil.getArtifact("io.quarkus", "quarkus-resteasy-common-deployment",
-				"1.0.0.CR1", null);
+				"1.0.0.CR1", null, new NullProgressMonitor());
 		Assert.assertNotNull("quarkus-resteasy-common-deployment*.jar is missing", resteasyJARFile);
 
 		// in /java/main/src classpath -> N quarkus properties
@@ -89,7 +89,7 @@ public class PropertiesManagerClassPathKindTest extends BasePropertiesManagerTes
 
 		// in /java/main/test classpath-> N + M quarkus properties
 		File undertowJARFile = DependencyUtil.getArtifact("io.quarkus", "quarkus-undertow-deployment", "1.0.0.CR1",
-				null);
+				null, new NullProgressMonitor());
 		Assert.assertNotNull("quarkus-undertow-deployment*.jar is missing", undertowJARFile);
 
 		IFile filefromTest = javaProject.getProject().getFile(new Path("src/test/resources/application.properties"));

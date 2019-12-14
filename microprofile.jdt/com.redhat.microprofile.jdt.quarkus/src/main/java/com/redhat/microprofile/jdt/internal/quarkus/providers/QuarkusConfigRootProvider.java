@@ -1,3 +1,12 @@
+/*******************************************************************************
+* Copyright (c) 2019 Red Hat Inc. and others.
+* All rights reserved. This program and the accompanying materials
+* which accompanies this distribution, and is available at
+* http://www.eclipse.org/legal/epl-v20.html
+*
+* Contributors:
+*     Red Hat Inc. - initial API and implementation
+*******************************************************************************/
 package com.redhat.microprofile.jdt.internal.quarkus.providers;
 
 import static com.redhat.microprofile.jdt.core.utils.AnnotationUtils.getAnnotation;
@@ -44,7 +53,7 @@ import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.JavaModelException;
 
 import com.redhat.microprofile.commons.metadata.ItemMetadata;
-import com.redhat.microprofile.jdt.core.AbstractPropertiesProvider;
+import com.redhat.microprofile.jdt.core.AbstractAnnotationPropertiesProvider;
 import com.redhat.microprofile.jdt.core.ArtifactResolver;
 import com.redhat.microprofile.jdt.core.IPropertiesCollector;
 import com.redhat.microprofile.jdt.core.SearchContext;
@@ -55,7 +64,14 @@ import com.redhat.microprofile.jdt.internal.quarkus.QuarkusConstants;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 
-public class QuarkusConfigRootProvider extends AbstractPropertiesProvider {
+/**
+ * Properties provider to collect Quarkus properties from the Java classes
+ * annotated with "io.quarkus.runtime.annotations.ConfigRoot" annotation.
+ * 
+ * @author Angelo ZERR
+ *
+ */
+public class QuarkusConfigRootProvider extends AbstractAnnotationPropertiesProvider {
 
 	private static final String[] ANNOTATION_NAMES = { QuarkusConstants.CONFIG_ROOT_ANNOTATION };
 
@@ -67,14 +83,14 @@ public class QuarkusConfigRootProvider extends AbstractPropertiesProvider {
 	}
 
 	@Override
-	public void begin(SearchContext context) {
+	public void begin(SearchContext context, IProgressMonitor monitor) {
 		Map<IPackageFragmentRoot, Properties> javadocCache = new HashMap<>();
 		context.put(JAVADOC_CACHE_KEY, javadocCache);
 	}
 
 	@Override
 	public void contributeToClasspath(IJavaProject project, boolean excludeTestCode, ArtifactResolver artifactResolver,
-			List<IClasspathEntry> deploymentJarEntries) throws JavaModelException {
+			List<IClasspathEntry> deploymentJarEntries, IProgressMonitor monitor) throws JavaModelException {
 		IClasspathEntry[] entries = project.getResolvedClasspath(true);
 		List<String> existingJars = Stream.of(entries)
 				// filter entry to collect only JAR
@@ -108,7 +124,8 @@ public class QuarkusConfigRootProvider extends AbstractPropertiesProvider {
 							String artifactId = result[1];
 							String version = result[2];
 							// Get or download deployment JAR
-							String deploymentJarFile = artifactResolver.getArtifact(groupId, artifactId, version);
+							String deploymentJarFile = artifactResolver.getArtifact(groupId, artifactId, version,
+									monitor);
 							if (deploymentJarFile != null) {
 								IPath deploymentJarFilePath = new Path(deploymentJarFile);
 								String deploymentJarName = deploymentJarFilePath.lastSegment();
@@ -117,7 +134,8 @@ public class QuarkusConfigRootProvider extends AbstractPropertiesProvider {
 									existingJars.add(deploymentJarName);
 									IPath sourceAttachmentPath = null;
 									// Get or download deployment sources JAR
-									String sourceJarFile = artifactResolver.getSources(groupId, artifactId, version);
+									String sourceJarFile = artifactResolver.getSources(groupId, artifactId, version,
+											monitor);
 									if (sourceJarFile != null) {
 										sourceAttachmentPath = new Path(sourceJarFile);
 									}
@@ -141,10 +159,10 @@ public class QuarkusConfigRootProvider extends AbstractPropertiesProvider {
 
 	@Override
 	protected void processAnnotation(IJavaElement javaElement, IAnnotation annotation, String annotationName,
-			SearchContext context, IPropertiesCollector collector, IProgressMonitor monitor) throws JavaModelException {
+			SearchContext context, IProgressMonitor monitor) throws JavaModelException {
 		Map<IPackageFragmentRoot, Properties> javadocCache = (Map<IPackageFragmentRoot, Properties>) context
 				.get(JAVADOC_CACHE_KEY);
-		processConfigRoot(javaElement, annotation, javadocCache, collector, monitor);
+		processConfigRoot(javaElement, annotation, javadocCache, context.getCollector(), monitor);
 	}
 
 	// ------------- Process Quarkus ConfigRoot -------------

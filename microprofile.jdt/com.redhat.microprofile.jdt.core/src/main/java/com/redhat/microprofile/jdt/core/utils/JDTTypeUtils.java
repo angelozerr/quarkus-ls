@@ -133,4 +133,9 @@ public class JDTTypeUtils {
 		}
 		return null;
 	}
+
+	public static boolean isSimpleFieldType(IType type, String typeName) throws JavaModelException {
+		return type == null || isPrimitiveType(typeName) || isList(typeName) || isMap(typeName) || isOptional(typeName)
+				|| (type != null && type.isEnum());
+	}
 }
