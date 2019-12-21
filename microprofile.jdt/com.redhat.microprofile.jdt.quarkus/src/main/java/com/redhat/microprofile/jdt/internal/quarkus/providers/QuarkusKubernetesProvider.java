@@ -10,25 +10,19 @@
 package com.redhat.microprofile.jdt.internal.quarkus.providers;
 
 import static com.redhat.microprofile.jdt.core.utils.JDTTypeUtils.findType;
+import static com.redhat.microprofile.jdt.core.utils.JDTTypeUtils.getDefaultValue;
 import static com.redhat.microprofile.jdt.core.utils.JDTTypeUtils.getPropertyType;
-import static com.redhat.microprofile.jdt.core.utils.JDTTypeUtils.getResolvedTypeName;
+import static com.redhat.microprofile.jdt.core.utils.JDTTypeUtils.getResolvedResultTypeName;
 import static com.redhat.microprofile.jdt.core.utils.JDTTypeUtils.isSimpleFieldType;
 
-import java.util.List;
-
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.Path;
-import org.eclipse.jdt.core.IClasspathEntry;
-import org.eclipse.jdt.core.IField;
-import org.eclipse.jdt.core.IJavaProject;
+import org.eclipse.jdt.core.IMethod;
 import org.eclipse.jdt.core.IType;
 import org.eclipse.jdt.core.ITypeHierarchy;
-import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.core.Signature;
 
 import com.redhat.microprofile.jdt.core.AbstractClassPropertiesProvider;
-import com.redhat.microprofile.jdt.core.ArtifactResolver;
 import com.redhat.microprofile.jdt.core.IPropertiesCollector;
 import com.redhat.microprofile.jdt.core.SearchContext;
 
@@ -58,7 +52,7 @@ public class QuarkusKubernetesProvider extends AbstractClassPropertiesProvider {
 	private static final String DOCKER_PREFIX = "docker";
 	private static final String OPENSHIFT_PREFIX = "openshift";
 	private static final String KUBERNETES_PREFIX = "kubernetes";
-	private static final String KUBERNETES_CONFIG_CLASS = "io.dekorate.kubernetes.config.KubernetesConfig";
+	private static final String KUBERNETES_CONFIG_CLASS = "io.dekorate.kubernetes.annotation.KubernetesApplication";
 	private static final String OPENSHIFT_CONFIG_CLASS = "io.dekorate.openshift.config.OpenshiftConfig";
 	private static final String S2I_BUILD_CONFIG_CLASS = "io.dekorate.s2i.config.S2iBuildConfig";
 	private static final String DOCKER_BUILD_CONFIG_CLASS = "io.dekorate.docker.config.DockerBuildConfig";
@@ -70,39 +64,10 @@ public class QuarkusKubernetesProvider extends AbstractClassPropertiesProvider {
 	}
 
 	@Override
-	public void contributeToClasspath(IJavaProject project, boolean excludeTestCode, ArtifactResolver artifactResolver,
-			List<IClasspathEntry> deploymentJarEntries, IProgressMonitor monitor) throws JavaModelException {
-		IClasspathEntry[] entries = project.getResolvedClasspath(true);
-		for (IClasspathEntry entry : entries) {
-			if (excludeTestCode && entry.isTest()) {
-				continue;
-			}
-			switch (entry.getEntryKind()) {
-
-			case IClasspathEntry.CPE_LIBRARY:
-
-				try {
-					String jarPath = entry.getPath().toOSString();
-					if (jarPath.contains("quarkus-kubernetes")) {
-						// FIXME : how to download io dekorate kubernetes-annotations with the proper
-						// version ???
-						String f = artifactResolver.getArtifact("io.dekorate", "kubernetes-annotations", "0.9.4",
-								"noapt", monitor);
-						deploymentJarEntries.add(JavaCore.newLibraryEntry(new Path(f), null, null));
-
-						f = artifactResolver.getArtifact("io.dekorate", "openshift-annotations", "0.9.4", "noapt",
-								monitor);
-						deploymentJarEntries.add(JavaCore.newLibraryEntry(new Path(f), null, null));
-
-						return;
-					}
-				} catch (Exception e) {
-					// do nothing
-				}
-
-				break;
-			}
-		}
+	public void begin(SearchContext context, IProgressMonitor monitor) {
+		String name = "io.dekorate.kubernetes.annotation.KubernetesApplication";
+		IType type = findType(context.getJavaProject(), name);
+		System.err.println(type);
 	}
 
 	@Override
@@ -147,28 +112,28 @@ public class QuarkusKubernetesProvider extends AbstractClassPropertiesProvider {
 	private void collectProperties(String prefix, IType configType, IPropertiesCollector collector,
 			IProgressMonitor monitor) throws JavaModelException {
 		String sourceType = configType.getFullyQualifiedName();
-		IField[] fields = configType.getFields();
-		for (IField field : fields) {
-			String fieldTypeName = getResolvedTypeName(field);
-			IType fieldClass = findType(field.getJavaProject(), fieldTypeName);
-			String fieldName = field.getElementName();
-			String propertyName = prefix + "." + StringUtil.hyphenate(fieldName);
-			boolean isArray = Signature.getArrayCount(field.getTypeSignature()) > 0;
+		IMethod[] methods = configType.getMethods();
+		for (IMethod method : methods) {
+			String resultTypeName = getResolvedResultTypeName(method);
+			IType resultTypeClass = findType(method.getJavaProject(), resultTypeName);
+			String methodName = method.getElementName();
+			String propertyName = prefix + "." + StringUtil.hyphenate(methodName);
+			boolean isArray = Signature.getArrayCount(method.getReturnType()) > 0;
 			if (isArray) {
 				propertyName += "[*]";
 			}
-			if (isSimpleFieldType(fieldClass, fieldTypeName)) {
-				String type = getPropertyType(fieldClass, fieldTypeName);
+			if (isSimpleFieldType(resultTypeClass, resultTypeName)) {
+				String type = getPropertyType(resultTypeClass, resultTypeName);
 				String description = null;
-				String sourceField = fieldName;
-				String defaultValue = null;
+				String sourceField = methodName;
+				String defaultValue = getDefaultValue(method);
 				String extensionName = null;
-				super.updateHint(collector, fieldClass);
+				super.updateHint(collector, resultTypeClass);
 
 				super.addItemMetadata(collector, propertyName, type, description, sourceType, sourceField, null,
-						defaultValue, extensionName, field.isBinary());
+						defaultValue, extensionName, method.isBinary());
 			} else {
-				collectProperties(propertyName, fieldClass, collector, monitor);
+				collectProperties(propertyName, resultTypeClass, collector, monitor);
 			}
 		}
 	}

@@ -19,8 +19,8 @@ import static com.redhat.microprofile.jdt.core.utils.JDTTypeUtils.getSourceType;
 import static com.redhat.microprofile.jdt.core.utils.JDTTypeUtils.isList;
 import static com.redhat.microprofile.jdt.core.utils.JDTTypeUtils.isMap;
 import static com.redhat.microprofile.jdt.core.utils.JDTTypeUtils.isNumber;
-import static com.redhat.microprofile.jdt.core.utils.JDTTypeUtils.isPrimitiveBoolean;
 import static com.redhat.microprofile.jdt.core.utils.JDTTypeUtils.isOptional;
+import static com.redhat.microprofile.jdt.core.utils.JDTTypeUtils.isPrimitiveBoolean;
 import static com.redhat.microprofile.jdt.core.utils.JDTTypeUtils.isPrimitiveType;
 import static io.quarkus.runtime.util.StringUtil.camelHumpsIterator;
 import static io.quarkus.runtime.util.StringUtil.hyphenate;
@@ -33,6 +33,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -55,6 +57,7 @@ import org.eclipse.jdt.core.JavaModelException;
 import com.redhat.microprofile.commons.metadata.ItemMetadata;
 import com.redhat.microprofile.jdt.core.AbstractAnnotationPropertiesProvider;
 import com.redhat.microprofile.jdt.core.ArtifactResolver;
+import com.redhat.microprofile.jdt.core.ArtifactResolver.Artifact;
 import com.redhat.microprofile.jdt.core.IPropertiesCollector;
 import com.redhat.microprofile.jdt.core.SearchContext;
 import com.redhat.microprofile.jdt.core.utils.JDTTypeUtils;
@@ -72,6 +75,8 @@ import io.quarkus.runtime.annotations.ConfigPhase;
  *
  */
 public class QuarkusConfigRootProvider extends AbstractAnnotationPropertiesProvider {
+
+	private static final Logger LOGGER = Logger.getLogger(QuarkusConfigRootProvider.class.getName());
 
 	private static final String[] ANNOTATION_NAMES = { QuarkusConstants.CONFIG_ROOT_ANNOTATION };
 
@@ -107,54 +112,84 @@ public class QuarkusConfigRootProvider extends AbstractAnnotationPropertiesProvi
 			switch (entry.getEntryKind()) {
 
 			case IClasspathEntry.CPE_LIBRARY:
-
-				try {
-					String jarPath = entry.getPath().toOSString();
-					IPackageFragmentRoot root = project.getPackageFragmentRoot(jarPath);
-					if (root != null) {
-						IJarEntryResource resource = JDTTypeUtils.findPropertiesResource(root,
-								QuarkusConstants.QUARKUS_EXTENSION_PROPERTIES);
-						if (resource != null) {
-							Properties properties = new Properties();
-							properties.load(resource.getContents());
-							// deployment-artifact=io.quarkus\:quarkus-undertow-deployment\:0.21.1
-							String deploymentArtifact = properties.getProperty("deployment-artifact");
-							String[] result = deploymentArtifact.split(":");
-							String groupId = result[0];
-							String artifactId = result[1];
-							String version = result[2];
-							// Get or download deployment JAR
-							String deploymentJarFile = artifactResolver.getArtifact(groupId, artifactId, version,
-									monitor);
-							if (deploymentJarFile != null) {
-								IPath deploymentJarFilePath = new Path(deploymentJarFile);
-								String deploymentJarName = deploymentJarFilePath.lastSegment();
-								if (!existingJars.contains(deploymentJarName)) {
-									// The *-deployment JAR is not included in the classpath project, add it.
-									existingJars.add(deploymentJarName);
-									IPath sourceAttachmentPath = null;
-									// Get or download deployment sources JAR
-									String sourceJarFile = artifactResolver.getSources(groupId, artifactId, version,
-											monitor);
-									if (sourceJarFile != null) {
-										sourceAttachmentPath = new Path(sourceJarFile);
-									}
-									deploymentJarEntries.add(JavaCore.newLibraryEntry(deploymentJarFilePath,
-											sourceAttachmentPath, null));
-								}
+				String jarPath = entry.getPath().toOSString();
+				IPackageFragmentRoot root = project.getPackageFragmentRoot(jarPath);
+				if (root != null) {
+					Artifact deploymentArtifact = getDeploymentArtifact(root);
+					if (deploymentArtifact != null) {
+						if (addArtifactInClasspath(deploymentArtifact, existingJars, deploymentJarEntries,
+								artifactResolver, monitor)) {
+							// Add dependencies of deployment artifact
+							List<Artifact> dependencies = artifactResolver.getDependencies(deploymentArtifact, monitor);
+							for (Artifact dependency : dependencies) {
+								addArtifactInClasspath(dependency, existingJars, deploymentJarEntries, artifactResolver,
+										monitor);
 							}
 						}
 					}
-				} catch (Exception e) {
-					// do nothing
 				}
-
 				break;
 			}
 		}
 		// Add the Quarkus project in classpath to resolve dependencies of deployment
 		// Quarkus JARs.
 		deploymentJarEntries.add(JavaCore.newProjectEntry(project.getProject().getLocation()));
+	}
+
+	private static boolean addArtifactInClasspath(Artifact deploymentArtifact, List<String> existingJars,
+			List<IClasspathEntry> deploymentJarEntries, ArtifactResolver artifactResolver, IProgressMonitor monitor) {
+		// Get or download deployment JAR
+		String deploymentJarFile = artifactResolver.getArtifact(deploymentArtifact, monitor);
+		if (deploymentJarFile != null) {
+			IPath deploymentJarFilePath = Path.fromOSString(deploymentJarFile);
+			String deploymentJarName = deploymentJarFilePath.lastSegment();
+			if (!existingJars.contains(deploymentJarName)) {
+				// The *-deployment JAR is not included in the classpath project, add it.
+				existingJars.add(deploymentJarName);
+				IPath sourceAttachmentPath = null;
+				// Get or download deployment sources JAR
+				Artifact sourceArtifact = new Artifact(deploymentArtifact.getGroupId(),
+						deploymentArtifact.getArtifactId(), deploymentArtifact.getVersion(),
+						ArtifactResolver.CLASSIFIER_SOURCES);
+				String sourceJarFile = artifactResolver.getArtifact(sourceArtifact, monitor);
+				if (sourceJarFile != null) {
+					sourceAttachmentPath = Path.fromOSString(sourceJarFile);
+				}
+				deploymentJarEntries.add(JavaCore.newLibraryEntry(deploymentJarFilePath, sourceAttachmentPath, null));
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Returns the deployment artifact declared in the
+	 * 'quarkus-extension.properties' file and null otherwise.
+	 * 
+	 * @param root the JAR
+	 * @return the deployment artifact declared in the
+	 *         'quarkus-extension.properties' file and null otherwise.
+	 */
+	private static Artifact getDeploymentArtifact(IPackageFragmentRoot root) {
+		try {
+			IJarEntryResource resource = JDTTypeUtils.findPropertiesResource(root,
+					QuarkusConstants.QUARKUS_EXTENSION_PROPERTIES_FILE);
+			if (resource == null) {
+				return null;
+			}
+			Properties properties = new Properties();
+			properties.load(resource.getContents());
+			// deployment-artifact=io.quarkus\:quarkus-undertow-deployment\:0.21.1
+			String deploymentArtifact = properties.getProperty(QuarkusConstants.DEPLOYMENT_ARTIFACT_PROPERTY);
+			String[] result = deploymentArtifact.split(":");
+			String groupId = result[0];
+			String artifactId = result[1];
+			String version = result[2];
+			return new Artifact(groupId, artifactId, version);
+		} catch (Exception e) {
+			LOGGER.log(Level.SEVERE, "Error while downloading deployment JAR '" + root.getElementName() + "'.", e);
+			return null;
+		}
 	}
 
 	@Override
@@ -338,7 +373,8 @@ public class QuarkusConfigRootProvider extends AbstractAnnotationPropertiesProvi
 						subKey = baseKey + "." + name;
 					}
 					final String defaultValue = configItemAnnotation == null ? ConfigItem.NO_DEFAULT
-							: getAnnotationMemberValue(configItemAnnotation, QuarkusConstants.CONFIG_ITEM_ANNOTATION_DEFAULT_VALUE);
+							: getAnnotationMemberValue(configItemAnnotation,
+									QuarkusConstants.CONFIG_ITEM_ANNOTATION_DEFAULT_VALUE);
 
 					String fieldTypeName = getResolvedTypeName(field);
 					IType fieldClass = findType(field.getJavaProject(), fieldTypeName);
@@ -378,11 +414,12 @@ public class QuarkusConfigRootProvider extends AbstractAnnotationPropertiesProvi
 		// Default value for primitive type
 		if (isPrimitiveBoolean(fieldTypeName)) {
 			item = super.addItemMetadata(collector, name, type, description, sourceType, sourceField, null,
-					defaultValue == null || ConfigItem.NO_DEFAULT.equals(defaultValue) ? "false" : defaultValue, extensionName,
-					field.isBinary());
+					defaultValue == null || ConfigItem.NO_DEFAULT.equals(defaultValue) ? "false" : defaultValue,
+					extensionName, field.isBinary());
 		} else if (isNumber(fieldTypeName)) {
 			item = super.addItemMetadata(collector, name, type, description, sourceType, sourceField, null,
-					defaultValue == null || ConfigItem.NO_DEFAULT.equals(defaultValue) ? "0" : defaultValue, extensionName, field.isBinary());
+					defaultValue == null || ConfigItem.NO_DEFAULT.equals(defaultValue) ? "0" : defaultValue,
+					extensionName, field.isBinary());
 		} else if (isMap(fieldTypeName)) {
 			// FIXME: find better mean to check field is a Map
 			// this code works only if user uses Map as declaration and not if they declare
@@ -517,7 +554,7 @@ public class QuarkusConfigRootProvider extends AbstractAnnotationPropertiesProvi
 
 	private static IJarEntryResource findJavadocFromQuakusJavadocProperties(IPackageFragmentRoot packageRoot)
 			throws JavaModelException {
-		return JDTTypeUtils.findPropertiesResource(packageRoot, QuarkusConstants.QUARKUS_JAVADOC_PROPERTIES);
+		return JDTTypeUtils.findPropertiesResource(packageRoot, QuarkusConstants.QUARKUS_JAVADOC_PROPERTIES_FILE);
 	}
 
 	private static int getPhase(ConfigPhase configPhase) {

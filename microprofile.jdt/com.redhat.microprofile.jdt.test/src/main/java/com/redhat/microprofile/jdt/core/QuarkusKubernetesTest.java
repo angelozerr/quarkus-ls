@@ -57,7 +57,7 @@ public class QuarkusKubernetesTest extends BasePropertiesManagerTest {
 								+ "`kubernetes.deployment.target=kubernetes, openshift`.",
 						true, null, null, null, 0, "kubernetes"),
 				p(null, "kubernetes.group", "java.lang.String", null, true,
-						"io.dekorate.kubernetes.config.ApplicationConfiguration", null, null, 0, null),
+						"io.dekorate.kubernetes.config.ApplicationConfiguration", "group", null, 0, null),
 				p(null, "kubernetes.registry", "java.lang.String", "Specify the `docker registry`.", true, null, null,
 						null, 0, null));
 
@@ -96,7 +96,7 @@ public class QuarkusKubernetesTest extends BasePropertiesManagerTest {
 						null, true, "io.dekorate.kubernetes.config.Port", "protocol", null, 0, null),
 
 				p(null, "openshift.group", "java.lang.String", null, true,
-						"io.dekorate.kubernetes.config.ApplicationConfiguration", null, null, 0, null),
+						"io.dekorate.kubernetes.config.ApplicationConfiguration", "group", null, 0, null),
 				p(null, "openshift.registry", "java.lang.String", "Specify the `docker registry`.", true, null, null,
 						null, 0, null));
 
