@@ -187,7 +187,7 @@ class MicroProfileProjectInfoCache {
 	 * @return as promise the MicroProfile project information for the given
 	 *         application.properties URI.
 	 */
-	public CompletableFuture<MicroProfileProjectInfo> getMicroProfileProjectInfo(MicroProfileProjectInfoParams params) {
+	public CompletableFuture<MicroProfileProjectInfo> getProjectInfo(MicroProfileProjectInfoParams params) {
 		// Search project info in cache
 		MicroProfileProjectInfoWrapper projectInfo = cache.get(params.getUri());
 		if (projectInfo == null) {

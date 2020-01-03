@@ -46,7 +46,7 @@ public class MockMicroProfileLanguageClient implements MicroProfileLanguageClien
 
 	private MicroProfilePropertyDefinitionProvider provider;
 
-	public MockMicroProfileLanguageClient(MicroProfileLanguageServer languageServer) {
+	public MockMicroProfileLanguageClient(MicroProfileLanguageServer languageServer, Integer timeout) {
 		this.languageServer = languageServer;
 		this.jarProperties = new HashMap<>();
 		this.jarHints = new HashMap<>();

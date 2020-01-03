@@ -9,6 +9,9 @@
 *******************************************************************************/
 package com.redhat.microprofile.ls;
 
+import static com.redhat.microprofile.ls.MicroProfileLanguageServerUtils.completion;
+import static com.redhat.microprofile.ls.MicroProfileLanguageServerUtils.createServer;
+import static com.redhat.microprofile.ls.MicroProfileLanguageServerUtils.didOpen;
 import static com.redhat.microprofile.services.MicroProfileAssert.assertCompletions;
 import static com.redhat.microprofile.services.MicroProfileAssert.c;
 import static com.redhat.microprofile.services.MicroProfileAssert.r;
@@ -18,20 +21,15 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 import org.eclipse.lsp4j.CompletionList;
-import org.eclipse.lsp4j.CompletionParams;
-import org.eclipse.lsp4j.DidOpenTextDocumentParams;
-import org.eclipse.lsp4j.Position;
-import org.eclipse.lsp4j.TextDocumentIdentifier;
-import org.eclipse.lsp4j.TextDocumentItem;
 import org.junit.Assert;
 import org.junit.Test;
 
 import com.redhat.microprofile.commons.metadata.ItemHint;
 import com.redhat.microprofile.commons.metadata.ItemHint.ValueHint;
 import com.redhat.microprofile.commons.metadata.ItemMetadata;
-import com.redhat.microprofile.ls.api.MicroProfileLanguageClientAPI;
 
 /**
+ * 
  * Test with change usecase of classpath and java sources changed.
  * 
  * @author Angelo ZERR
@@ -187,27 +185,6 @@ public class MicroProfileLanguageServerScopeChangedTest {
 				e.printStackTrace();
 			}
 		});
-	}
-
-	private static MicroProfileLanguageServer createServer() {
-		MicroProfileLanguageServer languageServer = new MicroProfileLanguageServer();
-		MicroProfileLanguageClientAPI languageClient = new MockMicroProfileLanguageClient(languageServer);
-		languageServer.setClient(languageClient);
-		return languageServer;
-	}
-
-	private void didOpen(String uri, MicroProfileLanguageServer server) {
-		DidOpenTextDocumentParams params = new DidOpenTextDocumentParams();
-		params.setTextDocument(new TextDocumentItem(uri, "", 1, ""));
-		server.getTextDocumentService().didOpen(params);
-	}
-
-	private static CompletionList completion(String uri, MicroProfileLanguageServer server)
-			throws InterruptedException, ExecutionException {
-		CompletionParams params = new CompletionParams();
-		params.setTextDocument(new TextDocumentIdentifier(uri));
-		params.setPosition(new Position(0, 0));
-		return server.getTextDocumentService().completion(params).get().getRight();
 	}
 
 }
