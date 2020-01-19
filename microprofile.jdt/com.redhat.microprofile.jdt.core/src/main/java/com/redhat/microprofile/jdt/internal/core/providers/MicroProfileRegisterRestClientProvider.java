@@ -10,10 +10,16 @@
 package com.redhat.microprofile.jdt.internal.core.providers;
 
 import static com.redhat.microprofile.jdt.core.utils.AnnotationUtils.getAnnotationMemberValue;
+import static com.redhat.microprofile.jdt.core.utils.AnnotationUtils.isMatchAnnotation;
+
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.jdt.core.IAnnotation;
 import org.eclipse.jdt.core.IJavaElement;
+import org.eclipse.jdt.core.IMemberValuePair;
 import org.eclipse.jdt.core.IType;
 import org.eclipse.jdt.core.JavaModelException;
 
@@ -90,12 +96,15 @@ import com.redhat.microprofile.jdt.core.SearchContext;
  */
 public class MicroProfileRegisterRestClientProvider extends AbstractAnnotationTypeReferencePropertiesProvider {
 
+	// constants for @RegisterRestClient
 	private static final String REGISTER_REST_CLIENT_ANNOTATION = "org.eclipse.microprofile.rest.client.inject.RegisterRestClient";
 	private static final String REGISTER_REST_CLIENT_ANNOTATION_CONFIG_KEY = "configKey";
+	private static final String MP_REST_CLIENT_CLASS_REFERENCE_TYPE = "${mp.register.rest.client.class}";
+
+	// constants for @RegisterProvider
+	private static final String REGISTER_PROVIDER_ANNOTATION = "org.eclipse.microprofile.rest.client.annotation.RegisterProvider";
 
 	private static final String[] ANNOTATION_NAMES = { REGISTER_REST_CLIENT_ANNOTATION };
-
-	private static final String MP_REST_CLASS_REFERENCE_TYPE = "${mp.register.rest.client.class}";
 
 	private static final String MP_REST_ADDED = MicroProfileRegisterRestClientProvider.class.getName() + "#mp-rest";
 
@@ -105,8 +114,8 @@ public class MicroProfileRegisterRestClientProvider extends AbstractAnnotationTy
 	}
 
 	@Override
-	protected void processAnnotation(IJavaElement javaElement, IAnnotation registerRestClientAnnotation,
-			String annotationName, SearchContext context, IProgressMonitor monitor) throws JavaModelException {
+	protected void processAnnotation(IJavaElement javaElement, IAnnotation mpRestAnnotation, String annotationName,
+			SearchContext context, IProgressMonitor monitor) throws JavaModelException {
 		if (javaElement.getElementType() == IJavaElement.TYPE) {
 
 			IPropertiesCollector collector = context.getCollector();
@@ -116,63 +125,108 @@ public class MicroProfileRegisterRestClientProvider extends AbstractAnnotationTy
 				// /mp-rest/url
 				String docs = "The base URL to use for this service, the equivalent of the `baseUrl` method.\r\n"
 						+ "This property (or */mp-rest/uri) is considered required, however implementations may have other ways to define these URLs/URIs.";
-				super.addItemMetadata(collector, MP_REST_CLASS_REFERENCE_TYPE + "/mp-rest/url", "java.lang.String",
-						docs, null, null, null, null, null, false);
+				super.addItemMetadata(collector, MP_REST_CLIENT_CLASS_REFERENCE_TYPE + "/mp-rest/url",
+						"java.lang.String", docs, null, null, null, null, null, false);
 
 				// /mp-rest/uri
 				docs = "The base URI to use for this service, the equivalent of the baseUri method.\r\n"
 						+ "This property (or */mp-rest/url) is considered required, however implementations may have other ways to define these URLs/URIs."
 						+ "This property will override any `baseUri` value specified in the `@RegisterRestClient` annotation.";
-				super.addItemMetadata(collector, MP_REST_CLASS_REFERENCE_TYPE + "/mp-rest/uri", "java.lang.String",
-						docs, null, null, null, null, null, false);
+				super.addItemMetadata(collector, MP_REST_CLIENT_CLASS_REFERENCE_TYPE + "/mp-rest/uri",
+						"java.lang.String", docs, null, null, null, null, null, false);
 
 				// /mp-rest/scope
 				docs = "The fully qualified classname to a CDI scope to use for injection, defaults to "
 						+ "`javax.enterprise.context.Dependent`.";
-				super.addItemMetadata(collector, MP_REST_CLASS_REFERENCE_TYPE + "/mp-rest/scope", "java.lang.String",
-						docs, null, null, null, null, null, false);
+				super.addItemMetadata(collector, MP_REST_CLIENT_CLASS_REFERENCE_TYPE + "/mp-rest/scope",
+						"java.lang.String", docs, null, null, null, null, null, false);
 
 				// /mp-rest/providers
 				docs = "A comma separated list of fully-qualified provider classnames to include in the client, "
 						+ "the equivalent of the `register` method or the `@RegisterProvider` annotation.";
-				super.addItemMetadata(collector, MP_REST_CLASS_REFERENCE_TYPE + "/mp-rest/providers",
+				super.addItemMetadata(collector, MP_REST_CLIENT_CLASS_REFERENCE_TYPE + "/mp-rest/providers",
 						"java.lang.String", docs, null, null, null, null, null, false);
-
-				// TODO :
-				// com.mycompany.remoteServices.MyServiceClient/mprest/providers/com.mycompany.MyProvider/priority
-				// will override the priority of the provider for this interface.
 
 				// /mp-rest/connectTimeout
 				docs = "Timeout specified in milliseconds to wait to connect to the remote endpoint.";
-				super.addItemMetadata(collector, MP_REST_CLASS_REFERENCE_TYPE + "/mp-rest/connectTimeout",
+				super.addItemMetadata(collector, MP_REST_CLIENT_CLASS_REFERENCE_TYPE + "/mp-rest/connectTimeout",
 						"long", docs, null, null, null, null, null, false);
 
 				// /mp-rest/readTimeout
 				docs = "Timeout specified in milliseconds to wait for a response from the remote endpoint.";
-				super.addItemMetadata(collector, MP_REST_CLASS_REFERENCE_TYPE + "/mp-rest/readTimeout",
-						"long", docs, null, null, null, null, null, false);
+				super.addItemMetadata(collector, MP_REST_CLIENT_CLASS_REFERENCE_TYPE + "/mp-rest/readTimeout", "long",
+						docs, null, null, null, null, null, false);
 
 				context.put(MP_REST_ADDED, Boolean.TRUE);
 			}
 
 			IType type = (IType) javaElement;
-			ItemHint itemHint = collector.getItemHint(MP_REST_CLASS_REFERENCE_TYPE);
-			if (!type.isBinary()) {
-				itemHint.setSource(Boolean.TRUE);
-			}
-
-			// Add class annotated with @RegisterRestClient in the "hints" values with name
-			// '${mp.register.rest.client.class}'
-			ValueHint value = new ValueHint();
-			String classOrConfigKey = getAnnotationMemberValue(registerRestClientAnnotation,
-					REGISTER_REST_CLIENT_ANNOTATION_CONFIG_KEY);
-			if (classOrConfigKey == null) {
-				classOrConfigKey = type.getFullyQualifiedName();
-			}
-			value.setValue(classOrConfigKey);
-			value.setSourceType(type.getFullyQualifiedName());
-			itemHint.getValues().add(value);
+			fillHintForRegisterRestClientAnnotation(mpRestAnnotation, collector, type);
+			fillHintForRegisterProviderAnnotation(mpRestAnnotation, collector, type);
 		}
 	}
 
+	private void fillHintForRegisterRestClientAnnotation(IAnnotation mpRestAnnotation, IPropertiesCollector collector,
+			IType type) throws JavaModelException {
+		// @RegisterRestClient annotation name : add class annotated with
+		// @RegisterRestClient in the "hints" values with name
+		// '${mp.register.rest.client.class}'
+		ItemHint itemHint = collector.getItemHint(MP_REST_CLIENT_CLASS_REFERENCE_TYPE);
+		if (!type.isBinary()) {
+			itemHint.setSource(Boolean.TRUE);
+		}
+
+		ValueHint value = new ValueHint();
+		String classOrConfigKey = getAnnotationMemberValue(mpRestAnnotation,
+				REGISTER_REST_CLIENT_ANNOTATION_CONFIG_KEY);
+		if (classOrConfigKey == null) {
+			classOrConfigKey = type.getFullyQualifiedName();
+		}
+		value.setValue(classOrConfigKey);
+		value.setSourceType(type.getFullyQualifiedName());
+		itemHint.getValues().add(value);
+	}
+
+	private void fillHintForRegisterProviderAnnotation(IAnnotation mpRestAnnotation, IPropertiesCollector collector,
+			IType type) throws JavaModelException {
+		IAnnotation[] annotations = type.getAnnotations();
+		List<String> providerClasses = Stream.of(annotations)
+				.filter(annotation -> isMatchAnnotation(annotation, REGISTER_PROVIDER_ANNOTATION)).map(annotation -> {
+					try {
+						for (IMemberValuePair pair : annotation.getMemberValuePairs()) {
+							if ("value".equals(pair.getMemberName())) {
+								return pair.getValue() != null ? pair.getValue().toString() : null;
+							}
+						}
+					} catch (JavaModelException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+					return "";
+				}).collect(Collectors.toList());
+
+		if (providerClasses.isEmpty()) {
+			return;
+		}
+
+		String providerHintKey = "${" + type.getFullyQualifiedName() + ".provider}";
+
+		// /mp-rest/providers/*/priority
+		String docs = "Override the priority of the provider for the given interface.";
+		super.addItemMetadata(collector,
+				MP_REST_CLIENT_CLASS_REFERENCE_TYPE + "/mp-rest/providers/" + providerHintKey + "/priority",
+				"java.lang.String", docs, null, null, null, null, null, false);
+
+		ItemHint itemHint = collector.getItemHint(providerHintKey);
+		if (!type.isBinary()) {
+			itemHint.setSource(Boolean.TRUE);
+		}
+		for (String providerClass : providerClasses) {
+			ValueHint value = new ValueHint();
+			value.setValue(providerClass);
+			value.setSourceType(type.getFullyQualifiedName());
+			itemHint.getValues().add(value);
+		}
+
+	}
 }

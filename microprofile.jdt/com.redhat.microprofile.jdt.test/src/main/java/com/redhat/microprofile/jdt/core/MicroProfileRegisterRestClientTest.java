@@ -37,7 +37,7 @@ public class MicroProfileRegisterRestClientTest extends BasePropertiesManagerTes
 				MavenProjectName.rest_client_quickstart, MicroProfilePropertiesScope.ONLY_SOURCES);
 
 		// mp-rest Properties
-		assertProperties(infoFromClasspath, 6,
+		assertProperties(infoFromClasspath, 7,
 
 				p(null, "${mp.register.rest.client.class}/mp-rest/url", "java.lang.String",
 						"The base URL to use for this service, the equivalent of the `baseUrl` method.\r\n"
@@ -60,6 +60,14 @@ public class MicroProfileRegisterRestClientTest extends BasePropertiesManagerTes
 								+ "the equivalent of the `register` method or the `@RegisterProvider` annotation.",
 						false, null, null, null, 0, null),
 
+				// @RegisterRestClient
+				// @RegisterProvider(value = MyProvider.class)
+				// @RegisterProvider(value = MyProvider2.class)
+				// public interface CountriesService {
+				p(null, "${mp.register.rest.client.class}/mp-rest/providers/${org.acme.restclient.CountriesService.provider}/priority",
+						"java.lang.String", "Override the priority of the provider for the given interface.", false,
+						null, null, null, 0, null),
+
 				p(null, "${mp.register.rest.client.class}/mp-rest/connectTimeout", "long",
 						"Timeout specified in milliseconds to wait to connect to the remote endpoint.", false, null,
 						null, null, 0, null),
@@ -73,11 +81,15 @@ public class MicroProfileRegisterRestClientTest extends BasePropertiesManagerTes
 		assertPropertiesDuplicate(infoFromClasspath);
 
 		// mp-rest Hints
-		assertHints(infoFromClasspath, 1,
+		assertHints(infoFromClasspath, 2,
 
 				h("${mp.register.rest.client.class}", null, false, null,
 						vh("org.acme.restclient.CountriesService", null, "org.acme.restclient.CountriesService"), //
-						vh("configKey", null, "org.acme.restclient.CountiesServiceWithConfigKey")));
+						vh("configKey", null, "org.acme.restclient.CountiesServiceWithConfigKey")), //
+
+				h("${org.acme.restclient.CountriesService.provider}", null, false, null,
+						vh("MyProvider", null, "org.acme.restclient.CountriesService"), //
+						vh("MyProvider2", null, "org.acme.restclient.CountiesServiceWithConfigKey")));
 
 		assertHintsDuplicate(infoFromClasspath);
 

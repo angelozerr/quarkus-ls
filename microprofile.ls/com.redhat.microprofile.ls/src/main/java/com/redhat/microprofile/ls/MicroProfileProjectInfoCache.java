@@ -47,7 +47,7 @@ class MicroProfileProjectInfoCache {
 	private final MicroProfileProjectInfoProvider provider;
 
 	private static final MicroProfileProjectInfo EMPTY_PROJECT_INFO;
-	
+
 	static {
 		EMPTY_PROJECT_INFO = new MicroProfileProjectInfo();
 		EMPTY_PROJECT_INFO.setProperties(Collections.emptyList());
@@ -71,17 +71,114 @@ class MicroProfileProjectInfoCache {
 		 * @param value    the item value (ex : value =
 		 *                 'org.acme.restclient.CountriesService').
 		 */
-		public ComputedItemMetadata(ItemMetadata metadata, ItemHint itemHint, ValueHint value) {
+		public ComputedItemMetadata(ItemMetadata metadata, ExpandableName expandableName) {
 			// replace dynamic part from metadata name (ex:
 			// '${mp.register.rest.client.class}/mp-rest/url'))
 			// with hint value (ex: 'org.acme.restclient.CountriesService') to obtain
 			// the new name 'org.acme.restclient.CountriesService/mp-rest/url'
-			String name = metadata.getName().replace(itemHint.getName(), value.getValue());
+			String name = expandableName.getName();
 			super.setName(name);
 			super.setSource(Boolean.TRUE);
 			super.setType(metadata.getType());
 			super.setDescription(metadata.getDescription());
-			super.setSourceType(value.getSourceType());
+			super.setSourceType(((ValueHint) expandableName.items.stream().filter(item -> item instanceof ValueHint)
+					.findFirst().get()).getSourceType());
+		}
+	}
+
+	static class ExpandableName {
+
+		private final List<Object> items;
+
+		public ExpandableName(ExpandableName name) {
+			this.items = new ArrayList<>(name.items);
+		}
+
+		public String getName() {
+			StringBuilder name = new StringBuilder();
+			for (Object item : items) {
+				if (item instanceof String) {
+					name.append((String) item);
+				} else if (item instanceof ValueHint) {
+					name.append(((ValueHint) item).getValue());
+				}
+			}
+			return name.toString();
+		}
+
+		public ExpandableName() {
+			this.items = new ArrayList<Object>();
+		}
+
+		public void addContent(String content) {
+			this.items.add(content);
+		}
+
+		public void addHint(ItemHint hint) {
+			this.items.add(hint);
+		}
+
+		public List<ExpandableName> expand() {
+			List<ExpandableName> names = new ArrayList<>();
+			for (Object item : items) {
+				if (item instanceof ItemHint) {
+					names = expand((ItemHint) item, names);
+				} else if (item instanceof ValueHint) {
+					expand((ValueHint) item, names);
+				} else {
+					expand((String) item, names);
+				}
+			}
+			return names;
+		}
+
+		private List<ExpandableName> expand(ItemHint hint, List<ExpandableName> names) {
+			if (names.isEmpty()) {
+				for (ValueHint value : hint.getValues()) {
+					ExpandableName name = new ExpandableName();
+					name.addValueHint(value);
+					names.add(name);
+				}
+				return names;
+			} else {
+				List<ExpandableName> newNames = new ArrayList<>();
+				for (ExpandableName name : names) {
+					for (ValueHint value : hint.getValues()) {
+						ExpandableName newName = new ExpandableName(name);						
+						newName.addValueHint(value);
+						newNames.add(newName);
+					}
+				}
+				return newNames;
+			}
+		}
+
+		private void addValueHint(ValueHint value) {
+			this.items.add(value);
+		}
+
+		private void expand(String value, List<ExpandableName> names) {
+			if (names.isEmpty()) {
+				ExpandableName name = new ExpandableName();
+				name.addContent(value);
+				names.add(name);
+			} else {
+				for (ExpandableName expandableName : names) {
+					expandableName.addContent(value);
+				}
+			}
+		}
+
+		private void expand(ValueHint value, List<ExpandableName> names) {
+			if (names.isEmpty()) {
+				ExpandableName name = new ExpandableName();
+				name.addValueHint(value);
+				names.add(name);
+			} else {
+				for (ExpandableName expandableName : names) {
+					expandableName.addValueHint(value);
+				}
+			}
 		}
 	}
 
@@ -99,7 +196,8 @@ class MicroProfileProjectInfoCache {
 			super.setHints(
 					new CopyOnWriteArrayList<>(delegate.getHints() != null ? delegate.getHints() : new ArrayList<>()));
 			// Get dynamic and static properties from delegate project info
-			List<ItemMetadata> staticProperties = delegate.getProperties() != null ? delegate.getProperties()
+			List<ItemMetadata> staticProperties = delegate.getProperties() != null
+					? new ArrayList<>(delegate.getProperties())
 					: new ArrayList<>();
 			List<ItemMetadata> dynamicProperties = computeDynamicProperties(staticProperties);
 			staticProperties.removeAll(dynamicProperties);
@@ -112,7 +210,7 @@ class MicroProfileProjectInfoCache {
 		}
 
 		/**
-		 * Clear the cache only for Quarkus properties coming from java sources.
+		 * Clear the cache only for MicroProfile properties coming from java sources.
 		 */
 		public void clearPropertiesFromSource() {
 			setReloadFromSource(true);
@@ -124,7 +222,7 @@ class MicroProfileProjectInfoCache {
 		}
 
 		/**
-		 * Add the new quarkus properties in the cache coming java sources.
+		 * Add the new MicroProfile properties in the cache coming java sources.
 		 * 
 		 * @param propertiesFromJavaSource properties to add in the cache.
 		 */
@@ -159,16 +257,57 @@ class MicroProfileProjectInfoCache {
 		private static void expandProperties(List<ItemMetadata> allProperties, List<ItemMetadata> dynamicProperties,
 				Function<String, ItemHint> getHint) {
 			for (ItemMetadata metadata : dynamicProperties) {
-				int start = metadata.getName().indexOf("${");
-				int end = metadata.getName().indexOf("}", start);
-				String hint = metadata.getName().substring(start, end + 1);
+				String name = metadata.getName();
+				ExpandableName expandableName = createExpandableName(name, getHint);
+				if (expandableName != null) {
+					expandableName.expand().forEach(expendable -> {
+						allProperties.add(new ComputedItemMetadata(metadata, expendable));
+					});
+				}
+//				if (context != null) {
+//					for (int i = 0; i < context.size(); i++) {
+//						Object item = context.get(i);
+//						if (item instanceof ItemHint) {
+//
+//						}
+//					}
+//					/*
+//					 * for (ValueHint value : itemHint.getValues()) { allProperties.add(new
+//					 * ComputedItemMetadata(metadata, itemHint, value)); }
+//					 */
+//				}
+			}
+		}
+
+		private static ExpandableName createExpandableName(String name, Function<String, ItemHint> getHint) {
+			ExpandableName context = new ExpandableName();
+			int fromIndex = 0;
+			int staticIndex = 0;
+			while (fromIndex != -1) {
+				int start = name.indexOf("${", fromIndex);
+				if (start == -1) {
+					context.addContent(name.substring(staticIndex + 1, name.length()));
+					break;
+				}
+				int end = name.indexOf("}", start);
+				if (end == -1) {
+					// Should never occur
+					return null;
+				}
+				String hint = name.substring(start, end + 1);
 				ItemHint itemHint = getHint.apply(hint);
-				if (itemHint != null) {
-					for (ValueHint value : itemHint.getValues()) {
-						allProperties.add(new ComputedItemMetadata(metadata, itemHint, value));
+				if (itemHint != null && itemHint.getValues() != null && !itemHint.getValues().isEmpty()) {
+					if (staticIndex != start) {
+						context.addContent(name.substring(staticIndex + 1, start));
 					}
+					context.addHint(itemHint);
+					fromIndex = end;
+					staticIndex = fromIndex;
+				} else {
+					return null;
 				}
 			}
+			return context;
 		}
 
 		private boolean isReloadFromSource() {
@@ -208,7 +347,7 @@ class MicroProfileProjectInfoCache {
 			// not found in the cache, load the project info from the JDT LS Extension
 			params.setScopes(MicroProfilePropertiesScope.SOURCES_AND_DEPENDENCIES);
 			CompletableFuture<MicroProfileProjectInfo> future = provider.getProjectInfo(params). //
-					exceptionally(ex-> {
+					exceptionally(ex -> {
 						LOGGER.warning(String.format("Cannot find MicroProfileProjectInfo for '%s'", params.getUri()));
 						return new MicroProfileProjectInfoWrapper(EMPTY_PROJECT_INFO);
 					}).thenApply(info -> new MicroProfileProjectInfoWrapper(info));
@@ -222,7 +361,8 @@ class MicroProfileProjectInfoCache {
 
 		MicroProfileProjectInfoWrapper wrapper = getProjectInfoWrapper(projectInfo);
 		if (wrapper.isReloadFromSource()) {
-			// There are some java sources changed, get the Quarkus properties from java
+			// There are some java sources changed, get the MicroProfile properties from
+			// java
 			// sources.
 			params.setScopes(MicroProfilePropertiesScope.ONLY_SOURCES);
 			return provider.getProjectInfo(params).thenApply(info ->
