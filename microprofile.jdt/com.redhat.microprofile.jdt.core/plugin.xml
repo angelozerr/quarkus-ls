@@ -23,9 +23,10 @@
    <!-- Delegate command handler for Java file -->
    <extension point="org.eclipse.jdt.ls.core.delegateCommandHandler">
       <delegateCommandHandler class="com.redhat.microprofile.jdt.internal.core.ls.MicroProfileDelegateCommandHandlerForJava">
-            <command id="microprofile/java/codeLens"/>
-            <command id="microprofile/java/hover"/>
+            <command id="microprofile/java/codeAction"/>
+            <command id="microprofile/java/codeLens"/>            
             <command id="microprofile/java/diagnostics"/>
+            <command id="microprofile/java/hover"/>            
        </delegateCommandHandler>
    </extension>
   
@@ -63,8 +64,13 @@
    <!-- Microprofile Health support -->
    
    <extension point="com.redhat.microprofile.jdt.core.javaFeatureParticipants">
-       <!-- Java diagnostics for the MicroProfile Health -->
-      <diagnostics class="com.redhat.microprofile.jdt.internal.health.java.MicroProfileHealthDiagnosticsParticipant" />   
+      <!-- Java codeAction for the MicroProfile Health -->
+      <codeAction for="microprofile-health#HealthAnnotationMissing"
+                  class="com.redhat.microprofile.jdt.internal.health.java.HealthAnnotationMissingCodeActionParticipant" />
+      <codeAction for="microprofile-health#ImplementHealthCheck"
+                  class="com.redhat.microprofile.jdt.internal.health.java.HealthImplementHealthCheckCodeActionParticipant" />                  
+      <!-- Java diagnostics for the MicroProfile Health -->
+      <diagnostics class="com.redhat.microprofile.jdt.internal.health.java.MicroProfileHealthDiagnosticsParticipant" />
    </extension>
    
    <!-- Microprofile RestClient support -->
@@ -75,9 +81,10 @@
    </extension>
    
    <extension point="com.redhat.microprofile.jdt.core.javaFeatureParticipants">
-       <!-- Java diagnostics for the MicroProfile RestClient -->
-      <diagnostics class="com.redhat.microprofile.jdt.internal.restclient.java.MicroProfileRestClientDiagnosticsParticipant" />
+      <!-- Java codeLens for the MicroProfile RestClient -->
       <codeLens class="com.redhat.microprofile.jdt.internal.restclient.java.MicroProfileRestClientCodeLensParticipant" />
+      <!-- Java diagnostics for the MicroProfile RestClient -->
+      <diagnostics class="com.redhat.microprofile.jdt.internal.restclient.java.MicroProfileRestClientDiagnosticsParticipant" />      
    </extension>
 
    <!-- JAX-RS support -->

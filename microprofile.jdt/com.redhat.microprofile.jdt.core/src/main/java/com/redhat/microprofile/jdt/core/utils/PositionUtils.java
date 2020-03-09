@@ -10,10 +10,13 @@
 package com.redhat.microprofile.jdt.core.utils;
 
 import org.eclipse.jdt.core.IField;
+import org.eclipse.jdt.core.IJavaElement;
 import org.eclipse.jdt.core.IOpenable;
 import org.eclipse.jdt.core.ISourceRange;
 import org.eclipse.jdt.core.IType;
+import org.eclipse.jdt.core.ITypeRoot;
 import org.eclipse.jdt.core.JavaModelException;
+import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 
 /**
@@ -42,5 +45,11 @@ public class PositionUtils {
 		IOpenable openable = type.getCompilationUnit();
 		ISourceRange sourceRange = type.getNameRange();
 		return utils.toRange(openable, sourceRange.getOffset(), sourceRange.getLength());
+	}
+
+	public static IJavaElement getJavaElementAt(ITypeRoot typeRoot, Position position, IJDTUtils utils)
+			throws JavaModelException {
+		int offset = utils.toOffset(typeRoot.getBuffer(), position.getLine(), position.getCharacter());
+		return typeRoot.getElementAt(offset);
 	}
 }

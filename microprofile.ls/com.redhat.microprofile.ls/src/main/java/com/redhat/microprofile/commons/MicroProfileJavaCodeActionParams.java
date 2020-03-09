@@ -7,18 +7,20 @@
 * Contributors:
 *     Red Hat Inc. - initial API and implementation
 *******************************************************************************/
-package com.redhat.microprofile.ls.api;
+package com.redhat.microprofile.commons;
 
-import org.eclipse.lsp4j.services.LanguageClient;
+import org.eclipse.lsp4j.CodeActionParams;
 
 /**
- * MicroProfile language client API.
+ * MicroProfile Java codeAction parameters.
  * 
  * @author Angelo ZERR
  *
  */
-public interface MicroProfileLanguageClientAPI extends LanguageClient, MicroProfileProjectInfoProvider,
-		MicroProfilePropertyDefinitionProvider, MicroProfileJavaCodeActionProvider, MicroProfileJavaCodeLensProvider,
-		MicroProfileJavaDiagnosticsProvider, MicroProfileJavaHoverProvider {
+public class MicroProfileJavaCodeActionParams extends CodeActionParams {
+
+	public String getUri() {
+		return getTextDocument().getUri();
+	}
 
 }

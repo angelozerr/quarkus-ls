@@ -16,13 +16,16 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.lsp4j.CodeAction;
 import org.eclipse.lsp4j.CodeLens;
 import org.eclipse.lsp4j.Diagnostic;
 import org.eclipse.lsp4j.Hover;
 
+import com.redhat.microprofile.jdt.core.java.IJavaCodeActionParticipant;
 import com.redhat.microprofile.jdt.core.java.IJavaCodeLensParticipant;
 import com.redhat.microprofile.jdt.core.java.IJavaDiagnosticsParticipant;
 import com.redhat.microprofile.jdt.core.java.IJavaHoverParticipant;
+import com.redhat.microprofile.jdt.core.java.JavaCodeActionContext;
 import com.redhat.microprofile.jdt.core.java.JavaCodeLensContext;
 import com.redhat.microprofile.jdt.core.java.JavaDiagnosticsContext;
 import com.redhat.microprofile.jdt.core.java.JavaHoverContext;
@@ -31,37 +34,79 @@ import com.redhat.microprofile.jdt.core.java.JavaHoverContext;
  * Wrapper class around java participants :
  * 
  * <ul>
- * <li>{@link IJavaHoverParticipant}.</li>
+ * <li>{@link IJavaCodeActionParticipant}.</li>
  * <li>{@link IJavaCodeLensParticipant}.</li>
+ * <li>{@link IJavaHoverParticipant}.</li>
  * <li>{@link IJavaDiagnosticsParticipant}.</li>
  * </ul>
  *
  */
-public class JavaFeatureDefinition
-		implements IJavaHoverParticipant, IJavaCodeLensParticipant, IJavaDiagnosticsParticipant {
+public class JavaFeatureDefinition implements IJavaCodeActionParticipant, IJavaCodeLensParticipant,
+		IJavaDiagnosticsParticipant, IJavaHoverParticipant {
 	private static final Logger LOGGER = Logger.getLogger(JavaFeatureDefinition.class.getName());
 
+	private final IJavaCodeActionParticipant codeActionParticipant;
 	private final IJavaCodeLensParticipant codeLensParticipant;
 	private final IJavaDiagnosticsParticipant diagnosticsParticipant;
 	private final IJavaHoverParticipant hoverParticipant;
 
+	private final String[] keys;
+
+	public JavaFeatureDefinition(IJavaCodeActionParticipant codeActionParticipant, String[] keys) {
+		this(codeActionParticipant, null, null, null, keys);
+	}
+
 	public JavaFeatureDefinition(IJavaCodeLensParticipant codeLensParticipant) {
-		this(codeLensParticipant, null, null);
+		this(null, codeLensParticipant, null, null, null);
 	}
 
 	public JavaFeatureDefinition(IJavaDiagnosticsParticipant diagnosticsParticipant) {
-		this(null, diagnosticsParticipant, null);
+		this(null, null, diagnosticsParticipant, null, null);
 	}
 
 	public JavaFeatureDefinition(IJavaHoverParticipant hoverParticipant) {
-		this(null, null, hoverParticipant);
+		this(null, null, null, hoverParticipant, null);
 	}
 
-	private JavaFeatureDefinition(IJavaCodeLensParticipant codeLensParticipant,
-			IJavaDiagnosticsParticipant diagnosticsParticipant, IJavaHoverParticipant hoverParticipant) {
+	private JavaFeatureDefinition(IJavaCodeActionParticipant codeActionParticipant,
+			IJavaCodeLensParticipant codeLensParticipant, IJavaDiagnosticsParticipant diagnosticsParticipant,
+			IJavaHoverParticipant hoverParticipant, String[] keys) {
+		this.codeActionParticipant = codeActionParticipant;
 		this.codeLensParticipant = codeLensParticipant;
 		this.diagnosticsParticipant = diagnosticsParticipant;
 		this.hoverParticipant = hoverParticipant;
+		this.keys = keys;
+	}
+
+	// -------------- CodeAction
+
+	@Override
+	public void beginCodeAction(Diagnostic diagnostic, JavaCodeActionContext context, IProgressMonitor monitor) {
+		try {
+			codeActionParticipant.beginCodeAction(diagnostic, context, monitor);
+		} catch (Exception e) {
+			LOGGER.log(Level.SEVERE, "Error while calling beginCodeAction", e);
+		}
+	}
+
+	@Override
+	public List<CodeAction> collectCodeAction(Diagnostic diagnostic, JavaCodeActionContext context,
+			IProgressMonitor monitor) {
+		try {
+			return codeActionParticipant.collectCodeAction(diagnostic, context, monitor);
+		} catch (Exception e) {
+			LOGGER.log(Level.SEVERE, "Error while collecting codeAction", e);
+			return null;
+		}
+	}
+
+	@Override
+	public void endCodeAction(Diagnostic diagnostic, JavaCodeActionContext context, IProgressMonitor monitor) {
+		try {
+			codeActionParticipant.endCodeAction(diagnostic, context, monitor);
+		} catch (Exception e) {
+			LOGGER.log(Level.SEVERE, "Error while calling endCodeAction", e);
+		}
 	}
 
 	// -------------- CodeLens
@@ -193,4 +238,7 @@ public class JavaFeatureDefinition
 		}
 	}
 
+	public String[] getKeys() {
+		return keys;
+	}
 }
