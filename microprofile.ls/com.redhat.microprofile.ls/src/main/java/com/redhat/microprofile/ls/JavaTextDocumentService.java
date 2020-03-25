@@ -16,6 +16,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -37,22 +38,25 @@ import org.eclipse.lsp4j.Hover;
 import org.eclipse.lsp4j.HoverParams;
 import org.eclipse.lsp4j.MarkupKind;
 import org.eclipse.lsp4j.PublishDiagnosticsParams;
-import org.eclipse.lsp4j.jsonrpc.CompletableFutures;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 
 import com.redhat.microprofile.commons.DocumentFormat;
+import com.redhat.microprofile.commons.JavaSnippetContext;
 import com.redhat.microprofile.commons.MicroProfileJavaCodeActionParams;
 import com.redhat.microprofile.commons.MicroProfileJavaCodeLensParams;
+import com.redhat.microprofile.commons.MicroProfileJavaCompletionParams;
 import com.redhat.microprofile.commons.MicroProfileJavaDiagnosticsParams;
 import com.redhat.microprofile.commons.MicroProfileJavaHoverParams;
 import com.redhat.microprofile.ls.commons.BadLocationException;
 import com.redhat.microprofile.ls.commons.TextDocument;
 import com.redhat.microprofile.ls.commons.TextDocuments;
 import com.redhat.microprofile.ls.commons.client.CommandKind;
+import com.redhat.microprofile.ls.commons.snippets.Snippet;
 import com.redhat.microprofile.ls.commons.snippets.TextDocumentSnippetRegistry;
 import com.redhat.microprofile.settings.MicroProfileCodeLensSettings;
 import com.redhat.microprofile.settings.SharedSettings;
 import com.redhat.microprofile.snippets.LanguageId;
+import com.redhat.microprofile.snippets.SnippetContextForJava;
 
 /**
  * LSP text document service for Java file.
@@ -107,25 +111,46 @@ public class JavaTextDocumentService extends AbstractTextDocumentService {
 
 	@Override
 	public CompletableFuture<Either<List<CompletionItem>, CompletionList>> completion(CompletionParams params) {
-		return CompletableFutures.computeAsync(cancel -> {
-			try {
-				// Returns java snippets
-				TextDocument document = documents.get(params.getTextDocument().getUri());
-				int completionOffset = document.offsetAt(params.getPosition());
-				boolean canSupportMarkdown = true;
-				CompletionList list = new CompletionList();
-				list.setItems(new ArrayList<>());
-				getSnippetRegistry().getCompletionItems(document, completionOffset, canSupportMarkdown, context -> {
-					return true;
-				}).forEach(item -> {
-					list.getItems().add(item);
+		MicroProfileJavaCompletionParams javaParams = new MicroProfileJavaCompletionParams(
+				params.getTextDocument().getUri(), params.getPosition());
+		List<Snippet> snippets = getSnippetRegistry().getSnippets();
+		List<JavaSnippetContext> contexts = snippets.stream().map(snippet -> (JavaSnippetContext) snippet.getContext())
+				.collect(Collectors.toList());
+		javaParams.setContexts(contexts);
+
+		return microprofileLanguageServer.getLanguageClient().getJavaCompletion(javaParams). //
+				thenApply(result -> {
+					try {
+						List<Boolean> resolved = result.getResolvedContexts();
+
+						// Returns java snippets
+						TextDocument document = documents.get(params.getTextDocument().getUri());
+						int completionOffset = document.offsetAt(params.getPosition());
+						boolean canSupportMarkdown = true;
+						CompletionList list = new CompletionList();
+						list.setItems(new ArrayList<>());
+
+						AtomicInteger i = new AtomicInteger();
+						getSnippetRegistry()
+								.getCompletionItems(document, completionOffset, canSupportMarkdown, context -> {
+									int j = i.getAndIncrement();
+									if (context == null || resolved == null) {
+										return true;
+									}
+									if (context instanceof SnippetContextForJava) {
+										return ((SnippetContextForJava) context)
+												.isMatch(resolved.get(j));
+									}
+									return false;
+								}).forEach(item -> {
+									list.getItems().add(item);
+								});
+						return Either.forRight(list);
+					} catch (BadLocationException e) {
+						LOGGER.log(Level.SEVERE, "Error while getting java completions", e);
+						return Either.forRight(null);
+					}
 				});
-				return Either.forRight(list);
-			} catch (BadLocationException e) {
-				LOGGER.log(Level.SEVERE, "Error while getting java completions", e);
-				return Either.forRight(null);
-			}
-		});
 	}
 
 	@Override

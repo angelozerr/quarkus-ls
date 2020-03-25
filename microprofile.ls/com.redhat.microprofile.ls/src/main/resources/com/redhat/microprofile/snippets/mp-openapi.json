@@ -10,7 +10,11 @@
       "\tdescription = \"${2:description}\"",
       ")"
     ],
-    "description": "Describes an operation or typically a HTTP method against a specific path."
+    "description": "Describes an operation or typically a HTTP method against a specific path.",
+    "context": {
+    	"kind": "annotation",
+    	"type": "org.eclipse.microprofile.openapi.annotations.Operation"
+    }
   },
   "@Content": {
     "prefix": [

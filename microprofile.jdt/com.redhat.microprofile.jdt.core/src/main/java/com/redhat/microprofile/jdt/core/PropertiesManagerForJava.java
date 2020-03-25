@@ -22,16 +22,16 @@ import org.eclipse.jdt.core.ITypeRoot;
 import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.lsp4j.CodeAction;
 import org.eclipse.lsp4j.CodeLens;
-import org.eclipse.lsp4j.Command;
 import org.eclipse.lsp4j.Diagnostic;
 import org.eclipse.lsp4j.Hover;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.PublishDiagnosticsParams;
-import org.eclipse.lsp4j.jsonrpc.messages.Either;
 
 import com.redhat.microprofile.commons.DocumentFormat;
 import com.redhat.microprofile.commons.MicroProfileJavaCodeActionParams;
 import com.redhat.microprofile.commons.MicroProfileJavaCodeLensParams;
+import com.redhat.microprofile.commons.MicroProfileJavaCompletionParams;
+import com.redhat.microprofile.commons.MicroProfileJavaCompletionResult;
 import com.redhat.microprofile.commons.MicroProfileJavaDiagnosticsParams;
 import com.redhat.microprofile.commons.MicroProfileJavaHoverParams;
 import com.redhat.microprofile.jdt.core.java.codelens.JavaCodeLensContext;
@@ -41,6 +41,7 @@ import com.redhat.microprofile.jdt.core.utils.IJDTUtils;
 import com.redhat.microprofile.jdt.internal.core.java.JavaFeaturesRegistry;
 import com.redhat.microprofile.jdt.internal.core.java.codeaction.CodeActionHandler;
 import com.redhat.microprofile.jdt.internal.core.java.codelens.JavaCodeLensDefinition;
+import com.redhat.microprofile.jdt.internal.core.java.completion.CompletionHandler;
 import com.redhat.microprofile.jdt.internal.core.java.diagnostics.JavaDiagnosticsDefinition;
 import com.redhat.microprofile.jdt.internal.core.java.hover.JavaHoverDefinition;
 
@@ -60,8 +61,11 @@ public class PropertiesManagerForJava {
 
 	private final CodeActionHandler codeActionHandler;
 
+	private final CompletionHandler completionHandler;
+
 	private PropertiesManagerForJava() {
 		this.codeActionHandler = new CodeActionHandler();
+		this.completionHandler = new CompletionHandler();
 	}
 
 	/**
@@ -122,6 +126,20 @@ public class PropertiesManagerForJava {
 			}
 		});
 		definitions.forEach(definition -> definition.endCodeLens(context, monitor));
+	}
+
+	/**
+	 * Returns completion result for the given uri and position.
+	 * 
+	 * @param params  the completion parameters
+	 * @param utils   the utilities class
+	 * @param monitor the monitor
+	 * @return completion result for the given uri and position.
+	 * @throws JavaModelException
+	 */
+	public MicroProfileJavaCompletionResult completion(MicroProfileJavaCompletionParams params, IJDTUtils utils,
+			IProgressMonitor monitor) throws JavaModelException {
+		return completionHandler.completion(params, utils, monitor);
 	}
 
 	/**

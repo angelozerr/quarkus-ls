@@ -12,7 +12,6 @@
 package com.redhat.microprofile.jdt.internal.core.ls;
 
 import static com.redhat.microprofile.jdt.internal.core.ls.ArgumentUtils.getBoolean;
-import static com.redhat.microprofile.jdt.internal.core.ls.ArgumentUtils.getCodeActionContext;
 import static com.redhat.microprofile.jdt.internal.core.ls.ArgumentUtils.getFirst;
 import static com.redhat.microprofile.jdt.internal.core.ls.ArgumentUtils.getInt;
 import static com.redhat.microprofile.jdt.internal.core.ls.ArgumentUtils.getPosition;
@@ -21,8 +20,10 @@ import static com.redhat.microprofile.jdt.internal.core.ls.ArgumentUtils.getStri
 import static com.redhat.microprofile.jdt.internal.core.ls.ArgumentUtils.getStringList;
 import static com.redhat.microprofile.jdt.internal.core.ls.ArgumentUtils.getTextDocumentIdentifier;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -31,17 +32,20 @@ import org.eclipse.jdt.ls.core.internal.IDelegateCommandHandler;
 import org.eclipse.lsp4j.CodeAction;
 import org.eclipse.lsp4j.CodeActionContext;
 import org.eclipse.lsp4j.CodeLens;
-import org.eclipse.lsp4j.Command;
+import org.eclipse.lsp4j.Diagnostic;
 import org.eclipse.lsp4j.Hover;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.PublishDiagnosticsParams;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.TextDocumentIdentifier;
-import org.eclipse.lsp4j.jsonrpc.messages.Either;
 
 import com.redhat.microprofile.commons.DocumentFormat;
+import com.redhat.microprofile.commons.JavaKind;
+import com.redhat.microprofile.commons.JavaSnippetContext;
 import com.redhat.microprofile.commons.MicroProfileJavaCodeActionParams;
 import com.redhat.microprofile.commons.MicroProfileJavaCodeLensParams;
+import com.redhat.microprofile.commons.MicroProfileJavaCompletionParams;
+import com.redhat.microprofile.commons.MicroProfileJavaCompletionResult;
 import com.redhat.microprofile.commons.MicroProfileJavaDiagnosticsParams;
 import com.redhat.microprofile.commons.MicroProfileJavaHoverParams;
 import com.redhat.microprofile.jdt.core.PropertiesManagerForJava;
@@ -56,6 +60,8 @@ public class MicroProfileDelegateCommandHandlerForJava implements IDelegateComma
 
 	private static final String JAVA_CODEACTION_COMMAND_ID = "microprofile/java/codeAction";
 	private static final String JAVA_CODELENS_COMMAND_ID = "microprofile/java/codeLens";
+	private static final String JAVA_COMPLETION_COMMAND_ID = "microprofile/java/completion";
+
 	private static final String JAVA_DIAGNOSTICS_COMMAND_ID = "microprofile/java/diagnostics";
 	private static final String JAVA_HOVER_COMMAND_ID = "microprofile/java/hover";
 
@@ -69,6 +75,8 @@ public class MicroProfileDelegateCommandHandlerForJava implements IDelegateComma
 			return getCodeActionForJava(arguments, commandId, progress);
 		case JAVA_CODELENS_COMMAND_ID:
 			return getCodeLensForJava(arguments, commandId, progress);
+		case JAVA_COMPLETION_COMMAND_ID:
+			return getCompletionForJava(arguments, commandId, progress);
 		case JAVA_DIAGNOSTICS_COMMAND_ID:
 			return getDiagnosticsForJava(arguments, commandId, progress);
 		case JAVA_HOVER_COMMAND_ID:
@@ -171,6 +179,89 @@ public class MicroProfileDelegateCommandHandlerForJava implements IDelegateComma
 		params.setOpenURICommand(getString(obj, "openURICommand"));
 		params.setLocalServerPort(getInt(obj, "localServerPort"));
 		return params;
+	}
+
+	/**
+	 * Returns the Java completion result for the given Java file.
+	 * 
+	 * @param arguments
+	 * @param commandId
+	 * @param monitor
+	 * @return the Java completion result for the given Java file.
+	 * @throws CoreException
+	 * @throws JavaModelException
+	 */
+	private static MicroProfileJavaCompletionResult getCompletionForJava(List<Object> arguments, String commandId,
+			IProgressMonitor monitor) throws JavaModelException, CoreException {
+		// Create java code lens parameter
+		MicroProfileJavaCompletionParams params = createMicroProfileJavaCompletionParams(arguments, commandId);
+		// Return code lenses from the lens parameter
+		return PropertiesManagerForJava.getInstance().completion(params, JDTUtilsLSImpl.getInstance(), monitor);
+	}
+
+	/**
+	 * Create java completion parameter from the given arguments map.
+	 * 
+	 * @param arguments
+	 * @param commandId
+	 * 
+	 * @return java code lens parameter
+	 */
+	private static MicroProfileJavaCompletionParams createMicroProfileJavaCompletionParams(List<Object> arguments,
+			String commandId) {
+		Map<String, Object> obj = getFirst(arguments);
+		if (obj == null) {
+			throw new UnsupportedOperationException(String.format(
+					"Command '%s' must be call with one MicroProfileJavaCompletionParams argument!", commandId));
+		}
+		String javaFileUri = getString(obj, "uri");
+		if (javaFileUri == null) {
+			throw new UnsupportedOperationException(String.format(
+					"Command '%s' must be call with required MicroProfileJavaCompletionParams.uri (java URI)!",
+					commandId));
+		}
+		Position completionPosition = getPosition(obj, "position");
+		MicroProfileJavaCompletionParams params = new MicroProfileJavaCompletionParams(javaFileUri, completionPosition);
+		params.setContexts(getJavaCompletionContexts(obj));
+		return params;
+	}
+
+	private static List<JavaSnippetContext> getJavaCompletionContexts(Map<String, Object> obj) {
+		List<Map<String, Object>> contextsObj = (List<Map<String, Object>>) obj.get("contexts");
+		if (contextsObj == null) {
+			return Collections.emptyList();
+		}
+		return contextsObj.stream().map(contextObj -> {
+			JavaSnippetContext context = new JavaSnippetContext();
+			JavaKind kind = JavaKind.TYPE;
+			if (contextObj != null) {
+				Number kindIndex = (Number) contextObj.get("kind");
+				if (kindIndex != null) {
+					kind = JavaKind.forValue(kindIndex.intValue());
+				}				
+				context.setType((List<String>) contextObj.get("type"));
+			}
+			context.setKind(kind);
+			return context;
+		}).collect(Collectors.toList());
+	}
+
+	public static CodeActionContext getCodeActionContext(Map<String, Object> obj, String key) {
+		Map<String, Object> contextObj = (Map<String, Object>) obj.get(key);
+		if (contextObj == null) {
+			return null;
+		}
+		List<Map<String, Object>> diagnosticsObj = (List<Map<String, Object>>) contextObj.get("diagnostics");
+		List<Diagnostic> diagnostics = diagnosticsObj.stream().map(diagnosticObj -> {
+			Diagnostic diagnostic = new Diagnostic();
+			diagnostic.setRange(getRange(diagnosticObj, "range"));
+			diagnostic.setCode(getString(diagnosticObj, "code"));
+			diagnostic.setMessage(getString(diagnosticObj, "message"));
+			diagnostic.setSource(getString(diagnosticObj, "source"));
+			return diagnostic;
+		}).collect(Collectors.toList());
+		List<String> only = null;
+		return new CodeActionContext(diagnostics, only);
 	}
 
 	/**

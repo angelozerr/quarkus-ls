@@ -25,6 +25,7 @@
       <delegateCommandHandler class="com.redhat.microprofile.jdt.internal.core.ls.MicroProfileDelegateCommandHandlerForJava">
             <command id="microprofile/java/codeAction"/>
             <command id="microprofile/java/codeLens"/>
+            <command id="microprofile/java/completion"/>
             <command id="microprofile/java/diagnostics"/>
             <command id="microprofile/java/hover"/>
        </delegateCommandHandler>

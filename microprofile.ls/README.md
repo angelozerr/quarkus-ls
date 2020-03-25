@@ -62,7 +62,7 @@ Java and properties completion snippets are managed by the MicroProfile LS (snip
 
 The `"context"` key can be provided to specify the condition in which the snippet should appear:
 
- * for `properties files`: the context/extension can be declared in the snippet to show the snippet only if the extension belongs to the project.
+ * for `properties files`: the context/dependency can be declared in the snippet to show the snippet only if the extension belongs to the project.
 
 ```json
 "Add datasource properties": {
@@ -71,7 +71,7 @@ The `"context"` key can be provided to specify the condition in which the snippe
 			...
 		],
 		"context": {
-			"extension": "quarkus-agroal"
+			"dependency": "quarkus-agroal"
 		}
 	}
 ```

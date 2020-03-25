@@ -10,7 +10,11 @@
       "\tdescription = \"${2:description}\"",
       ")"
     ],
-    "description": "An annotation that contains the metadata information when requesting a metric to be injected or produced. This annotation can be used on fields of type Meter, Timer, Counter, and Histogram. For Gauge, the @Metric annotation can only be used on producer methods/fields."
+    "description": "An annotation that contains the metadata information when requesting a metric to be injected or produced. This annotation can be used on fields of type Meter, Timer, Counter, and Histogram. For Gauge, the @Metric annotation can only be used on producer methods/fields.",
+    "context": {
+    	"kind": "annotation",
+    	"type": "org.eclipse.microprofile.metrics.annotation.Metric"
+    }
   },
   "@Counted": {
     "prefix": [
@@ -46,7 +50,11 @@
       "\tdescription = \"${2:description}\"",
       ")"
     ],
-    "description": "Denotes a gauge which counts the parallel invocations of the annotated object."
+    "description": "Denotes a gauge which counts the parallel invocations of the annotated object.",
+    "context": {
+    	"target": ["method", "field", "parameter", "annotation_type"],
+    	"dependency": "microprofile-metrics"
+    }
   },
   "@Metered": {
     "prefix": [

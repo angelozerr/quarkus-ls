@@ -11,26 +11,25 @@
 *******************************************************************************/
 package com.redhat.microprofile.ls.api;
 
-import java.util.Collections;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
-import org.eclipse.lsp4j.CodeAction;
 import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
 
-import com.redhat.microprofile.commons.MicroProfileJavaCodeActionParams;
+import com.redhat.microprofile.commons.MicroProfileJavaCompletionParams;
+import com.redhat.microprofile.commons.MicroProfileJavaCompletionResult;
 
 /**
- * MicroProfile Java code action provider.
+ * MicroProfile Java completion provider.
  * 
  * @author Angelo ZERR
  *
  */
-public interface MicroProfileJavaCodeActionProvider {
+public interface MicroProfileJavaCompletionProvider {
 
-	@JsonRequest("microprofile/java/codeAction")
-	default CompletableFuture<List<CodeAction>> getJavaCodeAction(MicroProfileJavaCodeActionParams javaParams) {
-		return CompletableFuture.completedFuture(Collections.emptyList());
+	@JsonRequest("microprofile/java/completion")
+	default CompletableFuture<MicroProfileJavaCompletionResult> getJavaCompletion(
+			MicroProfileJavaCompletionParams javaParams) {
+		return CompletableFuture.completedFuture(null);
 	}
 
 }
