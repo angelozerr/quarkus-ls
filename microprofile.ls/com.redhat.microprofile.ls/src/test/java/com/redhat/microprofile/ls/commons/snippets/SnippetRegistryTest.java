@@ -22,6 +22,8 @@ import java.util.Arrays;
 import org.junit.Assert;
 import org.junit.Test;
 
+import com.redhat.microprofile.snippets.LanguageId;
+
 /**
  * Test for snippet registry.
  * 
@@ -144,5 +146,11 @@ public class SnippetRegistryTest {
 
 		assertCompletion("m |", registry, c("mp", "", r(0, 2, 2)), c("quarkus", "", r(0, 2, 2)));
 		assertCompletion("m|", registry, c("mp", "", r(0, 0, 1)), c("quarkus", "", r(0, 0, 1)));
+	}
+
+	@Test
+	public void javaSnippets() {
+		TextDocumentSnippetRegistry registry = new TextDocumentSnippetRegistry(LanguageId.java.name());
+
 	}
 }

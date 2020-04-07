@@ -58,7 +58,7 @@ public class JavaTextDocumentsTest {
 		JavaTextDocuments documents = new JavaTextDocuments(PROVIDER);
 		JavaTextDocument document1 = documents
 				.createDocument(new TextDocumentItem(MP_PROJECT + "/file1.java", "", 0, ""));
-		CompletableFuture<Boolean> result = document1.executeIfInMicroProfileProject(() -> {
+		CompletableFuture<Boolean> result = document1.executeIfInMicroProfileProject((projectInfo) -> {
 			// return the result of the execute
 			return CompletableFuture.completedFuture(true);
 		}, DEFAULT_VALUE);
@@ -72,7 +72,7 @@ public class JavaTextDocumentsTest {
 		JavaTextDocuments documents = new JavaTextDocuments(PROVIDER);
 		JavaTextDocument document1 = documents
 				.createDocument(new TextDocumentItem(NOMP_PROJECT + "/file1.java", "", 0, ""));
-		CompletableFuture<Boolean> result = document1.executeIfInMicroProfileProject(() -> {
+		CompletableFuture<Boolean> result = document1.executeIfInMicroProfileProject((projectInfo) -> {
 			// return the result of the execute
 			return CompletableFuture.completedFuture(true);
 		}, DEFAULT_VALUE);

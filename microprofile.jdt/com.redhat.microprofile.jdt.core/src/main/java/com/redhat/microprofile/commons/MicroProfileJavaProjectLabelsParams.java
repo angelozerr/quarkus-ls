@@ -11,6 +11,8 @@
 *******************************************************************************/
 package com.redhat.microprofile.commons;
 
+import java.util.List;
+
 /**
  * MicroProfile Java Project labels
  * 
@@ -20,6 +22,8 @@ package com.redhat.microprofile.commons;
 public class MicroProfileJavaProjectLabelsParams {
 
 	private String uri;
+
+	private List<String> types;
 
 	/**
 	 * Returns the Java file uri.
@@ -37,5 +41,13 @@ public class MicroProfileJavaProjectLabelsParams {
 	 */
 	public void setUri(String uri) {
 		this.uri = uri;
+	}
+
+	public List<String> getTypes() {
+		return types;
+	}
+
+	public void setTypes(List<String> types) {
+		this.types = types;
 	}
 }

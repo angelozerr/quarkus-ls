@@ -26,6 +26,7 @@ import com.redhat.microprofile.commons.MicroProfileJavaProjectLabelsParams;
 import com.redhat.microprofile.commons.ProjectLabelInfoEntry;
 import com.redhat.microprofile.jdt.core.utils.IJDTUtils;
 import com.redhat.microprofile.jdt.core.utils.JDTMicroProfileUtils;
+import com.redhat.microprofile.jdt.core.utils.JDTTypeUtils;
 import com.redhat.microprofile.jdt.internal.core.ProjectLabelRegistry;
 
 /**
@@ -54,7 +55,7 @@ public class ProjectLabelManager {
 		IProject[] projects = ResourcesPlugin.getWorkspace().getRoot().getProjects();
 
 		for (IProject project : projects) {
-			ProjectLabelInfoEntry info = getProjectLabelInfo(project);
+			ProjectLabelInfoEntry info = getProjectLabelInfo(project, null);
 			if (info != null) {
 				results.add(info);
 			}
@@ -66,12 +67,13 @@ public class ProjectLabelManager {
 	 * Returns project label results for the given Eclipse project.
 	 *
 	 * @param project Eclipse project.
+	 * @param types
 	 * @return project label results for the given Eclipse project.
 	 */
-	private ProjectLabelInfoEntry getProjectLabelInfo(IProject project) {
+	private ProjectLabelInfoEntry getProjectLabelInfo(IProject project, List<String> types) {
 		String uri = JDTMicroProfileUtils.getProjectURI(project);
 		if (uri != null) {
-			return new ProjectLabelInfoEntry(uri, getProjectLabels(project));
+			return new ProjectLabelInfoEntry(uri, getProjectLabels(project, types));
 		}
 		return null;
 	}
@@ -91,10 +93,10 @@ public class ProjectLabelManager {
 			// The uri doesn't belong to an Eclipse project
 			return ProjectLabelInfoEntry.EMPTY_PROJECT_INFO;
 		}
-		return getProjectLabelInfo(file.getProject());
+		return getProjectLabelInfo(file.getProject(), params.getTypes());
 	}
 
-	private List<String> getProjectLabels(IProject project) {
+	private List<String> getProjectLabels(IProject project, List<String> types) {
 		IJavaProject javaProject = JavaCore.create(project);
 
 		if (javaProject == null) {
@@ -105,6 +107,13 @@ public class ProjectLabelManager {
 		List<ProjectLabelDefinition> definitions = ProjectLabelRegistry.getInstance().getProjectLabelDefinitions();
 		for (ProjectLabelDefinition definition : definitions) {
 			projectLabels.addAll(definition.getProjectLabels(javaProject));
+		}
+		if (types != null) {
+			for (String type : types) {
+				if (JDTTypeUtils.findType(javaProject, type) != null) {
+					projectLabels.add(type);
+				}
+			}
 		}
 
 		return projectLabels;
