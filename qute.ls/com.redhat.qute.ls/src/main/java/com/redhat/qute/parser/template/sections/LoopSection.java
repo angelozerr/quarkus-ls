@@ -16,6 +16,7 @@ import static com.redhat.qute.parser.template.ParameterInfo.EMPTY;
 import java.util.Arrays;
 import java.util.List;
 
+import com.redhat.qute.parser.template.Node;
 import com.redhat.qute.parser.template.Parameter;
 import com.redhat.qute.parser.template.ParameterInfo;
 import com.redhat.qute.parser.template.ParametersInfo;
@@ -92,7 +93,7 @@ public abstract class LoopSection extends Section {
 	public Parameter getAliasParameter() {
 		int nbParameters = getParameters().size();
 		if (nbParameters >= 3) {
-			return getParameterAt(ALIAS_PARAMETER_INDEX);
+			return getParameterAtIndex(ALIAS_PARAMETER_INDEX);
 		}
 		return null;
 	}
@@ -100,17 +101,25 @@ public abstract class LoopSection extends Section {
 	public Parameter getIterableParameter() {
 		int nbParameters = getParameters().size();
 		if (nbParameters >= 2) {
-			Parameter iterable = getParameterAt(ITERABLE_PARAMETER_INDEX);
+			Parameter iterable = getParameterAtIndex(ITERABLE_PARAMETER_INDEX);
 			if (iterable != null) {
 				return iterable;
 			}
 		} else {
-			Parameter iterable = getParameterAt(0);
+			Parameter iterable = getParameterAtIndex(0);
 			if (iterable != null) {
 				return iterable;
 			}
 		}
 		return null;
+	}
+
+	public boolean isInAlias(int offset) {
+		Parameter parameter = getAliasParameter();
+		if (parameter == null) {
+			return false;
+		}
+		return Node.isIncluded(parameter, offset);
 	}
 
 	@Override

@@ -23,9 +23,12 @@ import org.eclipse.lsp4j.DocumentHighlight;
 import org.eclipse.lsp4j.DocumentLink;
 import org.eclipse.lsp4j.DocumentSymbol;
 import org.eclipse.lsp4j.Hover;
+import org.eclipse.lsp4j.LinkedEditingRanges;
+import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.LocationLink;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
+import org.eclipse.lsp4j.ReferenceContext;
 import org.eclipse.lsp4j.SymbolInformation;
 import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 
@@ -54,6 +57,8 @@ public class QuteLanguageService {
 	private final QuteDocumentLink documentLink;
 	private final QuteSymbolsProvider symbolsProvider;
 	private final QuteDiagnostics diagnostics;
+	private final QuteLinkedEditing linkedEditing;
+	private final QuteReference reference;
 
 	public QuteLanguageService(JavaDataModelCache javaCache) {
 		this.completions = new QuteCompletions(javaCache);
@@ -65,7 +70,8 @@ public class QuteLanguageService {
 		this.documentLink = new QuteDocumentLink();
 		this.symbolsProvider = new QuteSymbolsProvider();
 		this.diagnostics = new QuteDiagnostics(javaCache);
-
+		this.reference = new QuteReference();
+		this.linkedEditing = new QuteLinkedEditing();
 	}
 
 	/**
@@ -93,7 +99,7 @@ public class QuteLanguageService {
 			CancelChecker cancelChecker) {
 		return hover.doHover(template, position, sharedSettings, cancelChecker);
 	}
-	
+
 	public CompletableFuture<List<CodeAction>> doCodeActions(Template template, CodeActionContext context, Range range,
 			SharedSettings sharedSettings) {
 		return codeActions.doCodeActions(template, context, range, sharedSettings);
@@ -132,6 +138,16 @@ public class QuteLanguageService {
 	public List<Diagnostic> doDiagnostics(Template template, QuteValidationSettings validationSettings,
 			List<CompletableFuture<?>> resolvingJavaTypeFutures, CancelChecker cancelChecker) {
 		return diagnostics.doDiagnostics(template, validationSettings, resolvingJavaTypeFutures, cancelChecker);
+	}
+
+	public List<? extends Location> findReferences(Template template, Position position, ReferenceContext context,
+			CancelChecker cancelChecker) {
+		return reference.findReferences(template, position, context, cancelChecker);
+	}
+
+	public LinkedEditingRanges findLinkedEditingRanges(Template template, Position position,
+			CancelChecker cancelChecker) {
+		return linkedEditing.findLinkedEditingRanges(template, position, cancelChecker);
 	}
 
 }

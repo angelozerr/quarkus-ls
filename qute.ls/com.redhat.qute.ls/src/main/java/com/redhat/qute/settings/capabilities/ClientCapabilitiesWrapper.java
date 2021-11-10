@@ -80,6 +80,14 @@ public class ClientCapabilitiesWrapper {
 	public boolean isDocumentHighlightDynamicRegistered() {
 		return v3Supported && isDynamicRegistrationSupported(getTextDocument().getDocumentHighlight());
 	}
+	
+	public boolean isReferencesDynamicRegistrationSupported() {
+		return v3Supported && isDynamicRegistrationSupported(getTextDocument().getReferences());
+	}
+	
+	public boolean isLinkedEditingRangeDynamicRegistered() {
+		return v3Supported && isDynamicRegistrationSupported(getTextDocument().getLinkedEditingRange());
+	}
 
 	private boolean isDynamicRegistrationSupported(DynamicRegistrationCapabilities capability) {
 		return capability != null && capability.getDynamicRegistration() != null

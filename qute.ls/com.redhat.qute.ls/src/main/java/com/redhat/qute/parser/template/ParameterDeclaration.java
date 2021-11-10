@@ -93,6 +93,12 @@ public class ParameterDeclaration extends Node implements ParametersContainer, J
 		return getEndContent();
 	}
 
+	public boolean isInAlias(int offset) {
+		int aliasStart = getAliasStart();
+		int aliasEnd = getAliasEnd();
+		return offset >= aliasStart && offset <= aliasEnd;
+	}
+	
 	@Override
 	public Node getJavaTypeOwnerNode() {
 		return this;

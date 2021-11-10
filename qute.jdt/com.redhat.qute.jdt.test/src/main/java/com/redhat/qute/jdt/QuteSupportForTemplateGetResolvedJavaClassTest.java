@@ -92,7 +92,7 @@ public class QuteSupportForTemplateGetResolvedJavaClassTest {
 				QuteMavenProjectName.qute_quickstart);
 		result = QuteSupportForTemplate.getInstance().getResolvedJavaClass(params, getJDTUtils(),
 				new NullProgressMonitor());
-		Assert.assertEquals("java.util.List", result.getClassName());
+		Assert.assertEquals("java.util.List<java.lang.String>", result.getClassName());
 		Assert.assertTrue(result.isIterable());
 		Assert.assertEquals("java.util.List", result.getIterableType());
 		Assert.assertEquals("java.lang.String", result.getIterableOf());

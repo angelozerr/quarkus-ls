@@ -47,23 +47,14 @@ public class ServerCapabilitiesInitializer {
 				.setDocumentSymbolProvider(!clientCapabilities.isDocumentSymbolDynamicRegistrationSupported());
 		serverCapabilities.setHoverProvider(!clientCapabilities.isHoverDynamicRegistered());
 		serverCapabilities.setCodeActionProvider(!clientCapabilities.isCodeActionDynamicRegistered());
-		/*
-		 * serverCapabilities.setDocumentFormattingProvider(!clientCapabilities.
-		 * isFormattingDynamicRegistered());
-		 * serverCapabilities.setDocumentRangeFormattingProvider(
-		 * !clientCapabilities.isRangeFormattingDynamicRegistered());
-		 */
 		if (!clientCapabilities.isCompletionDynamicRegistrationSupported()) {
 			serverCapabilities.setCompletionProvider(DEFAULT_COMPLETION_OPTIONS);
 		}
 		if (!clientCapabilities.isCodeLensDynamicRegistered()) {
 			serverCapabilities.setCodeLensProvider(DEFAULT_CODELENS_OPTIONS);
 		}
-
-		/*
-		 * serverCapabilities.setDefinitionProvider(!clientCapabilities.
-		 * isDefinitionDynamicRegistered()); if
-		 */
+		serverCapabilities.setReferencesProvider(!clientCapabilities.isReferencesDynamicRegistrationSupported());
+		serverCapabilities.setLinkedEditingRangeProvider(!clientCapabilities.isLinkedEditingRangeDynamicRegistered());
 		return serverCapabilities;
 	}
 }

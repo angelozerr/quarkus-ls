@@ -76,34 +76,64 @@ public class QutePositionUtility {
 	public static Range createRange(RangeOffset range, Template template) {
 		return createRange(range.getStart(), range.getEnd(), template);
 	}
-	
-	public static Node tryToFindExpressionPart(int offset, Node node) {
+
+	public static Node findBestNode(int offset, Node node) {
 		switch (node.getKind()) {
 		case Section: {
 			Section section = (Section) node;
-			Expression expression = section.getExpressionParameter(offset);
-			if (expression != null) {
-				Node expressionNode = expression.findNodeExpressionAt(offset);
-				if (expressionNode != null) {
-					return expressionNode;
+			if (section.isInParameters(offset)) {
+				Expression expression = null;
+				Parameter parameter = section.getParameterAtOffset(offset);
+				if (parameter != null) {
+					if (parameter.hasValueAssigned() && !parameter.isInValue(offset)) {
+						// ex : {#let nam|e=value }
+						return parameter;
+					}
+					if (!parameter.hasValueAssigned() && !parameter.isCanHaveExpression()) {
+						// ex : {#for it|em in items }
+						return parameter;
+					}
+					// ex : {#let name=va|lue }
+					// ex : {#for item in ite|ms }
+					expression = parameter.getJavaTypeExpression();
 				}
-				return expression;
-			}			
+				if (expression == null) {
+					expression = section.getExpressionParameter();
+				}
+				if (expression != null) {
+					Node expressionNode = expression.findNodeExpressionAt(offset);
+					if (expressionNode != null) {
+						return expressionNode;
+					}
+					return expression;
+				}
+			}
 		}
-		break;
+			break;
 		case Expression: {
 			Expression expression = (Expression) node;
 			Node expressionNode = expression.findNodeExpressionAt(offset);
 			if (expressionNode != null) {
 				return expressionNode;
-			}			
+			}
 		}
-		break;
+			break;
 		default:
 			return node;
 		}
 		return node;
 	}
 
+	/**
+	 * Returns the location for the given <code>target</code> node.
+	 *
+	 * @param target the target node.
+	 * @return the location for the given <code>target</code> node.
+	 */
+	public static Location createLocation(Node target) {
+		Template targetDocument = target.getOwnerTemplate();
+		Range targetRange = createRange(target.getStart(), target.getEnd(), targetDocument);
+		return new Location(targetDocument.getUri(), targetRange);
+	}
 
 }

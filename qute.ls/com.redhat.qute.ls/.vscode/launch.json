@@ -8,7 +8,7 @@
 		"name": "Debug (Attach) - Remote",
 		"request": "attach",
 		"hostName": "localhost",
-		"port": 1065,
+		"port": 1074,
 		"projectName": "com.redhat.qute.ls"
 	}]
 }

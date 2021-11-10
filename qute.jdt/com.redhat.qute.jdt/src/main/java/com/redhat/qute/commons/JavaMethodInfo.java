@@ -1,8 +1,25 @@
+/*******************************************************************************
+* Copyright (c) 2021 Red Hat Inc. and others.
+* All rights reserved. This program and the accompanying materials
+* which accompanies this distribution, and is available at
+* http://www.eclipse.org/legal/epl-v20.html
+*
+* SPDX-License-Identifier: EPL-2.0
+*
+* Contributors:
+*     Red Hat Inc. - initial API and implementation
+*******************************************************************************/
 package com.redhat.qute.commons;
 
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Java method information.
+ * 
+ * @author Angelo ZERR
+ *
+ */
 public class JavaMethodInfo extends JavaMemberInfo {
 
 	private static final String NO_VALUE = "~";
@@ -12,7 +29,7 @@ public class JavaMethodInfo extends JavaMemberInfo {
 	private String returnType;
 
 	private String getterName;
-	
+
 	private List<JavaMethodParameterInfo> parameters;
 
 	public String getSignature() {
@@ -22,7 +39,7 @@ public class JavaMethodInfo extends JavaMemberInfo {
 	public void setSignature(String signature) {
 		this.signature = signature;
 	}
-	
+
 	public String getReturnType() {
 		if (returnType == null) {
 			String signature = getSignature();
@@ -86,12 +103,12 @@ public class JavaMethodInfo extends JavaMemberInfo {
 		int end = signature.indexOf(')', start - 1);
 		return end - start > 1;
 	}
-	
+
 	public JavaMethodParameterInfo getParameterAt(int index) {
 		List<JavaMethodParameterInfo> parameters = getParameters();
 		return parameters.size() > index ? parameters.get(index) : null;
 	}
-	
+
 	public List<JavaMethodParameterInfo> getParameters() {
 		if (parameters == null) {
 			parameters = parseParameters();
@@ -104,12 +121,58 @@ public class JavaMethodInfo extends JavaMemberInfo {
 		int start = signature.indexOf('(');
 		int end = signature.indexOf(')', start - 1);
 		String content = signature.substring(start + 1, end);
-		String[] splitParams = content.split(",");
-		for (String paramNameAndType : splitParams) {
-			int index = paramNameAndType.indexOf(':');
-			String paramName = paramNameAndType.substring(0, index).trim();
-			String paramType = paramNameAndType.substring(index + 1, paramNameAndType.length()).trim();
-			parameters.add(new JavaMethodParameterInfo(paramName, paramType));
+		// query : java.lang.String, params :
+		// java.util.Map<java.lang.String,java.lang.Object>
+		boolean paramTypeParsing = false;
+		StringBuilder paramName = new StringBuilder();
+		StringBuilder paramType = new StringBuilder();
+		int daemon = 0;
+		for (int i = 0; i < content.length(); i++) {
+			char c = content.charAt(i);
+			if (!paramTypeParsing) {
+				// ex query :
+				switch (c) {
+				case ' ':
+					// ignore space
+					break;
+				case ':':
+					paramTypeParsing = true;
+					break;
+				default:
+					paramName.append(c);
+				}
+			} else {
+				// ex java.lang.String,
+				switch (c) {
+				case ' ':
+					// ignore space
+					break;
+				case '<':
+					daemon++;
+					paramType.append(c);
+					break;
+				case '>':
+					daemon--;
+					paramType.append(c);
+					break;
+				case ',':
+					if (daemon == 0) {
+						parameters.add(new JavaMethodParameterInfo(paramName.toString(), paramType.toString()));
+						paramName.setLength(0);
+						paramType.setLength(0);
+						paramTypeParsing = false;
+						daemon = 0;
+					} else {
+						paramType.append(c);
+					}
+					break;
+				default:
+					paramType.append(c);
+				}
+			}
+		}
+		if (paramName.length() > 0) {
+			parameters.add(new JavaMethodParameterInfo(paramName.toString(), paramType.toString()));
 		}
 		return parameters;
 	}

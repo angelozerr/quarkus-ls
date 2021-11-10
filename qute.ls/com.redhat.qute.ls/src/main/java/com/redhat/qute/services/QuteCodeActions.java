@@ -29,8 +29,7 @@ import com.google.gson.JsonObject;
 import com.redhat.qute.ls.commons.BadLocationException;
 import com.redhat.qute.ls.commons.CodeActionFactory;
 import com.redhat.qute.ls.commons.TextDocument;
-import com.redhat.qute.parser.expression.Part;
-import com.redhat.qute.parser.expression.Parts;
+import com.redhat.qute.parser.expression.ObjectPart;
 import com.redhat.qute.parser.template.Expression;
 import com.redhat.qute.parser.template.Node;
 import com.redhat.qute.parser.template.NodeKind;
@@ -75,12 +74,13 @@ class QuteCodeActions {
 			} else {
 				int offset = template.offsetAt(diagnostic.getRange().getStart());
 				Node node = template.findNodeAt(offset);
-				node = QutePositionUtility.tryToFindExpressionPart(offset, node);
+				node = QutePositionUtility.findBestNode(offset, node);
 				if (node.getKind() == NodeKind.Expression) {
 					Expression expression = (Expression) node;
-					Parts parts = (Parts) expression.getExpressionContent().get(0);
-					Part part = parts.getObjectPart();
-					varName = part.getPartName();
+					ObjectPart part = expression.getObjectPart();
+					if (part != null) {
+						varName = part.getPartName();
+					}
 				}
 			}
 

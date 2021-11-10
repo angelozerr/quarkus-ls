@@ -70,7 +70,7 @@ public class IncludeSection extends Section {
 	}
 
 	public String getLinkedTemplateId() {
-		Parameter includedTemplateId = super.getParameterAt(0);
+		Parameter includedTemplateId = super.getParameterAtIndex(0);
 		if (includedTemplateId == null) {
 			return null;
 		}

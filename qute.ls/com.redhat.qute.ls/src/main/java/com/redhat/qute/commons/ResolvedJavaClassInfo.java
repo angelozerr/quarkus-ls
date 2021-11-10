@@ -72,16 +72,21 @@ public class ResolvedJavaClassInfo extends JavaClassInfo {
 		if (iterableOf != null) {
 			return true;
 		}
-		if (extendedTypes != null) {
+		boolean iterable = getClassName().equals("java.lang.Iterable");
+		if (!iterable && extendedTypes != null) {
 			for (String extendedType : extendedTypes) {
 				if ("Iterable".equals(extendedType) || extendedType.equals("java.lang.Iterable")) {
-					this.iterableOf = "java.lang.Object";
-					this.iterableType = getClassName();
-					return true;
+					iterable = true;
+					break;
 				}
 			}
 		}
-		return false;
+
+		if (iterable) {
+			this.iterableOf = "java.lang.Object";
+			this.iterableType = getClassName();
+		}
+		return iterable;
 	}
 
 	public JavaMemberInfo findMember(String property) {

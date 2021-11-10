@@ -37,7 +37,9 @@ public class QuteDefinitionInEachSectionTest {
 		template = "{#each| items}\r\n" + //
 				"		{it.name}\r\n" + //
 				"{/each}";
-		testDefinitionFor(template);
+		testDefinitionFor(template, "test.qute", //
+				ll("test.qute", r(0, 2, 0, 6), r(2, 2, 2, 6)));
+
 	}
 
 	@Test

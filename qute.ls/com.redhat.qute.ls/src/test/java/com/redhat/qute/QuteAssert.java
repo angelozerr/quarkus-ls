@@ -15,6 +15,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -42,12 +43,15 @@ import org.eclipse.lsp4j.DocumentHighlightKind;
 import org.eclipse.lsp4j.DocumentLink;
 import org.eclipse.lsp4j.Hover;
 import org.eclipse.lsp4j.HoverCapabilities;
+import org.eclipse.lsp4j.LinkedEditingRanges;
+import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.LocationLink;
 import org.eclipse.lsp4j.MarkedString;
 import org.eclipse.lsp4j.MarkupContent;
 import org.eclipse.lsp4j.MarkupKind;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
+import org.eclipse.lsp4j.ReferenceContext;
 import org.eclipse.lsp4j.ResourceOperation;
 import org.eclipse.lsp4j.TextDocumentEdit;
 import org.eclipse.lsp4j.TextEdit;
@@ -619,4 +623,72 @@ public class QuteAssert {
 		return Either.forLeft(new TextDocumentEdit(new VersionedTextDocumentIdentifier(uri, 0),
 				Collections.singletonList(te(startLine, startChar, endLine, endChar, newText))));
 	}
+
+	// ------------------- Reference assert
+
+	public static void testReferencesFor(String value, Location... expected) throws BadLocationException {
+		testReferencesFor(value, FILE_URI, PROJECT_URI, DEFAULT_JAVA_DATA_MODEL_CACHE, expected);
+	}
+
+	public static void testReferencesFor(String value, String fileUri, String projectUri, JavaDataModelCache javaCache,
+			Location... expected) throws BadLocationException {
+		int offset = value.indexOf('|');
+		value = value.substring(0, offset) + value.substring(offset + 1);
+
+		Template template = TemplateParser.parse(value, fileUri != null ? fileUri : FILE_URI);
+		Position position = template.positionAt(offset);
+
+		QuteLanguageService languageService = new QuteLanguageService(javaCache);
+
+		List<? extends Location> actual = languageService.findReferences(template, position, new ReferenceContext(),
+				() -> {
+				});
+		assertLocation(actual, expected);
+
+	}
+
+	public static Location l(final String uri, final Range range) {
+		return new Location(uri, range);
+	}
+
+	public static void assertLocation(List<? extends Location> actual, Location... expected) {
+		assertEquals(expected.length, actual.size());
+		assertArrayEquals(expected, actual.toArray());
+	}
+
+	// ------------------- Linked Editing assert
+
+	public static void testLinkedEditingFor(String value, LinkedEditingRanges expected) throws BadLocationException {
+		testLinkedEditingFor(value, FILE_URI, PROJECT_URI, DEFAULT_JAVA_DATA_MODEL_CACHE, expected);
+	}
+
+	public static void testLinkedEditingFor(String value, String fileUri, String projectUri,
+			JavaDataModelCache javaCache, LinkedEditingRanges expected) throws BadLocationException {
+		int offset = value.indexOf('|');
+		value = value.substring(0, offset) + value.substring(offset + 1);
+
+		Template template = TemplateParser.parse(value, fileUri != null ? fileUri : FILE_URI);
+		Position position = template.positionAt(offset);
+
+		QuteLanguageService languageService = new QuteLanguageService(javaCache);
+
+		LinkedEditingRanges actual = languageService.findLinkedEditingRanges(template, position, () -> {
+		});
+		assertLinkedEditing(actual, expected);
+	}
+
+	public static void assertLinkedEditing(LinkedEditingRanges actual, LinkedEditingRanges expected) {
+		if (expected == null) {
+			assertNull(actual);
+		} else {
+			assertNotNull(actual);
+			assertEquals(expected.getWordPattern(), actual.getWordPattern());
+			assertEquals(expected.getRanges(), actual.getRanges());
+		}
+	}
+
+	public static LinkedEditingRanges le(Range... ranges) {
+		return new LinkedEditingRanges(Arrays.asList(ranges));
+	}
+
 }

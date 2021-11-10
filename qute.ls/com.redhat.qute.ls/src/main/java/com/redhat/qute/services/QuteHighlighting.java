@@ -24,11 +24,14 @@ import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 
 import com.redhat.qute.ls.commons.BadLocationException;
+import com.redhat.qute.parser.expression.ObjectPart;
+import com.redhat.qute.parser.expression.Part;
+import com.redhat.qute.parser.expression.Parts.PartKind;
 import com.redhat.qute.parser.template.Node;
-import com.redhat.qute.parser.template.NodeKind;
 import com.redhat.qute.parser.template.Section;
 import com.redhat.qute.parser.template.Template;
 import com.redhat.qute.utils.QutePositionUtility;
+import com.redhat.qute.utils.QuteSearchUtils;
 
 /**
  * Qute highlighting support.
@@ -43,13 +46,30 @@ class QuteHighlighting {
 	public List<DocumentHighlight> findDocumentHighlights(Template template, Position position,
 			CancelChecker cancelChecker) {
 		try {
+			List<DocumentHighlight> highlights = new ArrayList<>();
+
 			int offset = template.offsetAt(position);
 			Node node = template.findNodeAt(offset);
 			if (node == null) {
 				return Collections.emptyList();
 			}
-			List<DocumentHighlight> highlights = new ArrayList<>();
-			fillWithDefaultHighlights(node, offset, position, highlights, cancelChecker);
+			node = QutePositionUtility.findBestNode(offset, node);
+			switch (node.getKind()) {
+			case ParameterDeclaration:
+			case Parameter:
+				highlightReferenceObjectPart(node, offset, highlights, cancelChecker);
+				break;
+			case ExpressionPart:
+				Part part = (Part) node;
+				if (part.getPartKind() == PartKind.Object) {
+					highlightDeclaredObject((ObjectPart) part, highlights, cancelChecker);
+				}
+				break;
+			case Section:
+				higlightSection((Section) node, offset, position, highlights, cancelChecker);
+				break;
+			default:
+			}
 			return highlights;
 		} catch (BadLocationException e) {
 			LOGGER.log(Level.SEVERE, "In QuteHighlighting the client provided Position is at a BadLocation", e);
@@ -57,19 +77,35 @@ class QuteHighlighting {
 		}
 	}
 
-	private static void fillWithDefaultHighlights(Node node, int offset, Position position,
+	private void highlightDeclaredObject(ObjectPart part, List<DocumentHighlight> highlights,
+			CancelChecker cancelChecker) {
+		QuteSearchUtils.searchDeclaredObjects(part, //
+				(referencedNode, referencedRange) -> {
+					highlights.add(new DocumentHighlight(referencedRange,
+							highlights.isEmpty() ? DocumentHighlightKind.Read : DocumentHighlightKind.Write));
+				}, true, cancelChecker);
+	}
+
+	private static void highlightReferenceObjectPart(Node node, int offset, List<DocumentHighlight> highlights,
+			CancelChecker cancelChecker) {
+		QuteSearchUtils.searchReferencedObjects(node, offset, //
+				(referencedNode, referencedRange) -> {
+					highlights.add(new DocumentHighlight(referencedRange,
+							highlights.isEmpty() ? DocumentHighlightKind.Write : DocumentHighlightKind.Read));
+				}, true, cancelChecker);
+	}
+
+	private static void higlightSection(Section section, int offset, Position position,
 			List<DocumentHighlight> highlights, CancelChecker cancelChecker) throws BadLocationException {
-		if (node.getKind() != NodeKind.Section) {
-			return;
-		}
-		Section sectionTag = (Section) node;
-		if ((sectionTag.isInStartTagName(offset) && sectionTag.hasEndTag())
-				|| (sectionTag.isInEndTag(offset) && sectionTag.isInEndTag(offset))) {
-			Range startTagRange = QutePositionUtility.selectStartTagName(sectionTag);
-			Range endTagRange = QutePositionUtility.selectEndTagName(sectionTag);
+		if ((section.isInStartTagName(offset) && section.hasEndTag())
+				|| (section.isInEndTag(offset) && section.isInEndTag(offset))) {
+			Range startTagRange = QutePositionUtility.selectStartTagName(section);
+			Range endTagRange = QutePositionUtility.selectEndTagName(section);
 			if (doesTagCoverPosition(startTagRange, endTagRange, position)) {
 				fillHighlightsList(startTagRange, endTagRange, highlights);
 			}
+		} else {
+			highlightReferenceObjectPart(section, offset, highlights, cancelChecker);
 		}
 	}
 

@@ -1,5 +1,6 @@
 package com.redhat.qute.ls;
 
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -150,7 +151,7 @@ public class MockJavaDataModelCache extends JavaDataModelCache {
 			} catch (Exception e) {
 
 			}
-			return new ProjectInfo("test-qute", "templates");
+			return new ProjectInfo("test-qute", Paths.get("templates").toFile().toString());
 		});
 	}
 

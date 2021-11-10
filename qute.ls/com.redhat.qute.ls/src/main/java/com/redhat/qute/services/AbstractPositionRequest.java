@@ -27,7 +27,7 @@ public abstract class AbstractPositionRequest {
 		if (node == null) {
 			return null;
 		}
-		return QutePositionUtility.tryToFindExpressionPart(offset, node);
+		return QutePositionUtility.findBestNode(offset, node);
 	}
 
 	protected abstract Node doFindNodeAt(Template template, int offset);

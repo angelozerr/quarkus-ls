@@ -3,6 +3,7 @@ package com.redhat.qute.parser.template;
 import java.util.List;
 
 import com.redhat.qute.parser.expression.ExpressionParser;
+import com.redhat.qute.parser.expression.ObjectPart;
 import com.redhat.qute.parser.expression.Part;
 import com.redhat.qute.parser.expression.Parts;
 
@@ -46,6 +47,15 @@ public class Expression extends Node {
 	public List<Node> getExpressionContent() {
 		parseExpressionIfNeeded();
 		return expressionContent;
+	}
+
+	public ObjectPart getObjectPart() {
+		List<Node> nodes = getExpressionContent();
+		if (nodes.isEmpty()) {
+			return null;
+		}
+		Parts parts = (Parts) nodes.get(0);
+		return parts.getObjectPart();
 	}
 
 	/**

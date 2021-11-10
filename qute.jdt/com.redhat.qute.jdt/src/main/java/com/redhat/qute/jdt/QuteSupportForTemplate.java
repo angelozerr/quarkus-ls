@@ -122,9 +122,18 @@ public class QuteSupportForTemplate {
 			return null;
 		}
 
-		String className = params.getPattern() != null ? params.getPattern() + "*" : "*";
+		int searchScope = IJavaSearchScope.SOURCES;
+		String className = params.getPattern();
 		if (StringUtils.isEmpty(className)) {
-			// return null;
+			searchScope = IJavaSearchScope.SOURCES;
+			className = "*";
+		} else {
+			searchScope = IJavaSearchScope.SOURCES | IJavaSearchScope.APPLICATION_LIBRARIES;
+			if (className.indexOf('.') != -1) {
+				className = className + "*";
+			} else {
+				className = "*.*." + className + "*";
+			}
 		}
 
 		List<JavaClassInfo> classes = new ArrayList<>();
@@ -133,7 +142,6 @@ public class QuteSupportForTemplate {
 		pattern = SearchPattern.createOrPattern(pattern, SearchPattern.createPattern(className,
 				IJavaSearchConstants.PACKAGE, 0, SearchPattern.R_CAMELCASE_MATCH));
 		SearchEngine engine = new SearchEngine();
-		int searchScope = IJavaSearchScope.SOURCES;
 		IJavaSearchScope scope = BasicSearchEngine.createJavaSearchScope(true, new IJavaElement[] { javaProject },
 				searchScope);
 
@@ -326,14 +334,18 @@ public class QuteSupportForTemplate {
 
 	private IType findType(String className, IJavaProject javaProject, IProgressMonitor monitor)
 			throws JavaModelException {
-		IType type = javaProject.findType(className, monitor);
-		if (type != null) {
-			return type;
-		}
-		if (className.indexOf('.') == -1) {
-			// No package, try with java.lang package
-			// ex : if className = String we should find type of java.lang.String
-			return javaProject.findType("java.lang." + className, monitor);
+		try {
+			IType type = javaProject.findType(className, monitor);
+			if (type != null) {
+				return type;
+			}
+			if (className.indexOf('.') == -1) {
+				// No package, try with java.lang package
+				// ex : if className = String we should find type of java.lang.String
+				return javaProject.findType("java.lang." + className, monitor);
+			}
+		} catch (Exception e) {
+			LOGGER.log(Level.SEVERE, "Error while finding type for '" + className + "'.", e);
 		}
 		return null;
 	}

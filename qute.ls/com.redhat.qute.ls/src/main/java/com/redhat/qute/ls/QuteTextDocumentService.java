@@ -36,8 +36,11 @@ import org.eclipse.lsp4j.DocumentSymbol;
 import org.eclipse.lsp4j.DocumentSymbolParams;
 import org.eclipse.lsp4j.Hover;
 import org.eclipse.lsp4j.HoverParams;
+import org.eclipse.lsp4j.LinkedEditingRangeParams;
+import org.eclipse.lsp4j.LinkedEditingRanges;
 import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.LocationLink;
+import org.eclipse.lsp4j.ReferenceParams;
 import org.eclipse.lsp4j.SymbolInformation;
 import org.eclipse.lsp4j.TextDocumentClientCapabilities;
 import org.eclipse.lsp4j.TextDocumentIdentifier;
@@ -203,6 +206,24 @@ public class QuteTextDocumentService implements TextDocumentService {
 		TextDocumentService service = getTextDocumentService(params.getTextDocument());
 		if (service != null) {
 			return service.documentLink(params);
+		}
+		return CompletableFuture.completedFuture(null);
+	}
+
+	@Override
+	public CompletableFuture<List<? extends Location>> references(ReferenceParams params) {
+		TextDocumentService service = getTextDocumentService(params.getTextDocument());
+		if (service != null) {
+			return service.references(params);
+		}
+		return CompletableFuture.completedFuture(null);
+	}
+
+	@Override
+	public CompletableFuture<LinkedEditingRanges> linkedEditingRange(LinkedEditingRangeParams params) {
+		TextDocumentService service = getTextDocumentService(params.getTextDocument());
+		if (service != null) {
+			return service.linkedEditingRange(params);
 		}
 		return CompletableFuture.completedFuture(null);
 	}

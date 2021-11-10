@@ -9,7 +9,7 @@
 * Contributors:
 *     Red Hat Inc. - initial API and implementation
 *******************************************************************************/
-package com.redhat.qute.services;
+package com.redhat.qute.services.highlighting;
 
 import static com.redhat.qute.QuteAssert.hl;
 import static com.redhat.qute.QuteAssert.r;
@@ -26,7 +26,7 @@ import com.redhat.qute.ls.commons.BadLocationException;
  * @author Angelo ZERR
  *
  */
-public class QuteHighlightingTest {
+public class QuteHighlightingInSectionTagTest {
 
 	@Test
 	public void noHighlightingEachSection() throws BadLocationException {

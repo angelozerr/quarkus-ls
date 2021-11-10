@@ -54,7 +54,7 @@ public class WithSection extends Section {
 		if (getParameters().isEmpty()) {
 			return null;
 		}
-		return getParameterAt(0);
+		return getParameterAtIndex(0);
 	}
 
 	@Override

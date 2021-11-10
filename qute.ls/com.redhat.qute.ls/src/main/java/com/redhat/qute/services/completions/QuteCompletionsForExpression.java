@@ -154,32 +154,21 @@ public class QuteCompletionsForExpression {
 
 		Set<String> existingProperties = new HashSet<>();
 		// Completion for Java fields
-		fillCompletionField(range, list, resolvedClass, projectUri, existingProperties);
+		fillCompletionFields(range, list, resolvedClass, projectUri, existingProperties);
 
 		// Completion for Java methods
-		fillCompletionMethod(range, list, resolvedClass, projectUri, completionSettings, formattingSettings,
+		fillCompletionMethods(range, list, resolvedClass, projectUri, completionSettings, formattingSettings,
 				existingProperties);
 
 		List<ValueResolver> resolvers = javaCache.getResolversFor(resolvedClass);
 		for (ValueResolver method : resolvers) {
-
-			String methodSignature = method.getSignature();
-			CompletionItem item = new CompletionItem();
-			item.setLabel(methodSignature);
-			item.setFilterText(method.getName());
-			item.setKind(CompletionItemKind.Method);
-			TextEdit textEdit = new TextEdit();
-			textEdit.setRange(range);
-			textEdit.setNewText(createMethodSnippet(method, completionSettings, formattingSettings));
-			item.setTextEdit(Either.forLeft(textEdit));
-			list.getItems().add(item);
-
+			fillCompletionMethod(method, range, completionSettings, formattingSettings, list);
 		}
 
 		return list;
 	}
 
-	private void fillCompletionField(Range range, CompletionList list, ResolvedJavaClassInfo resolvedClass,
+	private void fillCompletionFields(Range range, CompletionList list, ResolvedJavaClassInfo resolvedClass,
 			String projectUri, Set<String> existingProperties) {
 		for (JavaFieldInfo field : resolvedClass.getFields()) {
 			String filedName = field.getName();
@@ -201,13 +190,13 @@ public class QuteCompletionsForExpression {
 				ResolvedJavaClassInfo resolvedExtendedType = javaCache.resolveJavaType(extendedType, projectUri)
 						.getNow(null);
 				if (resolvedExtendedType != null) {
-					fillCompletionField(range, list, resolvedExtendedType, projectUri, existingProperties);
+					fillCompletionFields(range, list, resolvedExtendedType, projectUri, existingProperties);
 				}
 			}
 		}
 	}
 
-	private void fillCompletionMethod(Range range, CompletionList list, ResolvedJavaClassInfo resolvedClass,
+	private void fillCompletionMethods(Range range, CompletionList list, ResolvedJavaClassInfo resolvedClass,
 			String projectUri, QuteCompletionSettings completionSettings, QuteFormattingSettings formattingSettings,
 			Set<String> existingProperties) {
 		for (JavaMethodInfo method : resolvedClass.getMethods()) {
@@ -227,16 +216,8 @@ public class QuteCompletionsForExpression {
 			}
 
 			// Completion for method name (getValue)
-			String methodSignature = method.getSignature();
-			CompletionItem item = new CompletionItem();
-			item.setLabel(methodSignature);
-			item.setFilterText(method.getName());
-			item.setKind(CompletionItemKind.Method);
-			TextEdit textEdit = new TextEdit();
-			textEdit.setRange(range);
-			textEdit.setNewText(createMethodSnippet(method, completionSettings, formattingSettings));
-			item.setTextEdit(Either.forLeft(textEdit));
-			list.getItems().add(item);
+			fillCompletionMethod(method, range, completionSettings, formattingSettings, list);
+
 		}
 		List<String> extendedTypes = resolvedClass.getExtendedTypes();
 		if (extendedTypes != null) {
@@ -244,11 +225,28 @@ public class QuteCompletionsForExpression {
 				ResolvedJavaClassInfo resolvedExtendedType = javaCache.resolveJavaType(extendedType, projectUri)
 						.getNow(null);
 				if (resolvedExtendedType != null) {
-					fillCompletionMethod(range, list, resolvedExtendedType, projectUri, completionSettings,
+					fillCompletionMethods(range, list, resolvedExtendedType, projectUri, completionSettings,
 							formattingSettings, existingProperties);
 				}
 			}
 		}
+	}
+
+	private static CompletionItem fillCompletionMethod(JavaMethodInfo method, Range range,
+			QuteCompletionSettings completionSettings, QuteFormattingSettings formattingSettings, CompletionList list) {
+		String methodSignature = method.getSignature();
+		CompletionItem item = new CompletionItem();
+		item.setLabel(methodSignature);
+		item.setFilterText(method.getName());
+		item.setKind(CompletionItemKind.Method);
+		item.setInsertTextFormat(completionSettings.isCompletionSnippetsSupported() ? InsertTextFormat.Snippet
+				: InsertTextFormat.PlainText);
+		TextEdit textEdit = new TextEdit();
+		textEdit.setRange(range);
+		textEdit.setNewText(createMethodSnippet(method, completionSettings, formattingSettings));
+		item.setTextEdit(Either.forLeft(textEdit));
+		list.getItems().add(item);
+		return item;
 	}
 
 	private static String createMethodSnippet(JavaMethodInfo method, QuteCompletionSettings completionSettings,
@@ -304,19 +302,8 @@ public class QuteCompletionsForExpression {
 			QuteFormattingSettings formattingSettings, Range range, CompletionList list) {
 		List<ValueResolver> namespaceResolvers = javaCache.getNamespaceResolvers(template.getProjectUri());
 		for (ValueResolver method : namespaceResolvers) {
-			String methodSignature = method.getSignature();
-			CompletionItem item = new CompletionItem();
-			item.setLabel(methodSignature);
-			item.setFilterText(method.getName());
+			CompletionItem item = fillCompletionMethod(method, range, completionSettings, formattingSettings, list);
 			item.setKind(CompletionItemKind.Function);
-			if (completionSettings.isCompletionSnippetsSupported()) {
-				item.setInsertTextFormat(InsertTextFormat.Snippet);
-			}
-			TextEdit textEdit = new TextEdit();
-			textEdit.setRange(range);
-			textEdit.setNewText(createMethodSnippet(method, completionSettings, formattingSettings));
-			item.setTextEdit(Either.forLeft(textEdit));
-			list.getItems().add(item);
 		}
 	}
 
@@ -387,8 +374,8 @@ public class QuteCompletionsForExpression {
 				if (object != null) {
 					ResolvedJavaClassInfo withClassInfo = javaCache.resolveJavaType(object, projectUri).getNow(null);
 					if (withClassInfo != null) {
-						fillCompletionField(range, list, withClassInfo, projectUri, existingVars);
-						fillCompletionMethod(range, list, withClassInfo, projectUri, completionSettings,
+						fillCompletionFields(range, list, withClassInfo, projectUri, existingVars);
+						fillCompletionMethods(range, list, withClassInfo, projectUri, completionSettings,
 								formattingSettings, existingVars);
 					}
 				}

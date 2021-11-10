@@ -108,7 +108,7 @@ class QuteCodeLens {
 			if (section.getSectionKind() == SectionKind.INSERT) {
 
 				if (project != null) {
-					Parameter parameter = section.getParameterAt(0);
+					Parameter parameter = section.getParameterAtIndex(0);
 					if (parameter != null) {
 						String tag = parameter.getValue();
 						// TODO : implement findNbreferencesOfInsertTag correctly

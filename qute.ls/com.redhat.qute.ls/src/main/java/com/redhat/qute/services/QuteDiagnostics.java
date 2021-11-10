@@ -273,7 +273,7 @@ class QuteDiagnostics {
 	 * @param diagnostics    the diagnostics to fill.
 	 */
 	private static void validateIncludeSection(IncludeSection includeSection, List<Diagnostic> diagnostics) {
-		Parameter includedTemplateId = includeSection.getParameterAt(0);
+		Parameter includedTemplateId = includeSection.getParameterAtIndex(0);
 		if (includedTemplateId != null) {
 			// include defines a template to include
 			// ex : {#include base}

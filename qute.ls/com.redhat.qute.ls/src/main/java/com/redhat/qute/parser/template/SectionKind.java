@@ -12,5 +12,7 @@ public enum SectionKind {
 	SET, //
 	LET, //
 	WITH, //
+	SWITCH, //
+	WHEN, //
 	CUSTOM;
 }

@@ -39,9 +39,12 @@ import org.eclipse.lsp4j.DocumentSymbol;
 import org.eclipse.lsp4j.DocumentSymbolParams;
 import org.eclipse.lsp4j.Hover;
 import org.eclipse.lsp4j.HoverParams;
+import org.eclipse.lsp4j.LinkedEditingRangeParams;
+import org.eclipse.lsp4j.LinkedEditingRanges;
 import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.LocationLink;
 import org.eclipse.lsp4j.PublishDiagnosticsParams;
+import org.eclipse.lsp4j.ReferenceParams;
 import org.eclipse.lsp4j.SymbolInformation;
 import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.eclipse.lsp4j.jsonrpc.CancelChecker;
@@ -215,6 +218,21 @@ public class TemplateFileTextDocumentService extends AbstractTextDocumentService
 						return e;
 					}) //
 					.collect(Collectors.toList());
+		});
+	}
+
+	@Override
+	public CompletableFuture<List<? extends Location>> references(ReferenceParams params) {
+		return getTemplate(params.getTextDocument(), (cancelChecker, template) -> {
+			return getQuteLanguageService().findReferences(template, params.getPosition(), params.getContext(),
+					cancelChecker);
+		});
+	}
+
+	@Override
+	public CompletableFuture<LinkedEditingRanges> linkedEditingRange(LinkedEditingRangeParams params) {
+		return getTemplate(params.getTextDocument(), (cancelChecker, template) -> {
+			return getQuteLanguageService().findLinkedEditingRanges(template, params.getPosition(), cancelChecker);
 		});
 	}
 

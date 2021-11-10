@@ -179,7 +179,7 @@ public class Section extends Node implements ParametersContainer {
 		return this.parameters;
 	}
 
-	public Parameter getParameterAt(int index) {
+	public Parameter getParameterAtIndex(int index) {
 		List<Parameter> parameters = getParameters();
 		if (parameters.size() > index) {
 			return parameters.get(index);
@@ -188,6 +188,9 @@ public class Section extends Node implements ParametersContainer {
 	}
 
 	public Parameter getParameterAtOffset(int offset) {
+		if (!isInParameters(offset)) {
+			return null;
+		}
 		List<Parameter> parameters = getParameters();
 		return (Parameter) Node.findNodeAt(parameters.stream().map(param -> (Node) param).collect(Collectors.toList()),
 				offset);
@@ -242,17 +245,12 @@ public class Section extends Node implements ParametersContainer {
 	}
 
 	public boolean isInParameters(int offset) {
-		return offset >= getStartParametersOffset() && offset <= getEndParametersOffset();
+		return offset > getStartParametersOffset() && offset <= getEndParametersOffset();
 	}
 
-	public Expression getExpressionParameter(int offset) {
-		if (!isInParameters(offset)) {
-			return null;
-		}
-		Parameter parameter = getParameterAtOffset(offset);
-		if (parameter != null) {
-			return parameter.getJavaTypeExpression();
-		}
+	@Deprecated()
+	public Expression getExpressionParameter() {
+		// Try to remove this method
 		ExpressionParameter expression = new ExpressionParameter(getStartParametersOffset(), getEndParametersOffset());
 		expression.setParent(this);
 		return expression;

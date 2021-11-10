@@ -15,6 +15,17 @@ import org.junit.jupiter.api.Test;
 public class QuteCompletionInExpressionWithForSectionTest {
 
 	@Test
+	public void iterableParameter() throws Exception {
+		String template = "{@java.util.List<org.acme.Item> items}\r\n" + //
+				" \r\n" + //
+				"{#for item in |}\r\n" + //
+				"	{}    \r\n" + //
+				"{/for}";
+		testCompletionFor(template, //
+				c("items", "items", r(2, 14, 2, 14)));
+	}
+
+	@Test
 	public void objectPart() throws Exception {
 		String template = "{@java.util.List<org.acme.Item> items}\r\n" + //
 				" \r\n" + //

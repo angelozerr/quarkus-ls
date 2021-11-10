@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2019 Red Hat Inc. and others. All rights reserved. This program
+ * Copyright (c) 2021 Red Hat Inc. and others. All rights reserved. This program
  * and the accompanying materials which accompanies this distribution, and is
  * available at http://www.eclipse.org/legal/epl-v20.html
  *
@@ -18,6 +18,8 @@ import static com.redhat.qute.settings.capabilities.ServerCapabilitiesConstants.
 import static com.redhat.qute.settings.capabilities.ServerCapabilitiesConstants.DOCUMENT_LINK_ID;
 import static com.redhat.qute.settings.capabilities.ServerCapabilitiesConstants.DOCUMENT_SYMBOL_ID;
 import static com.redhat.qute.settings.capabilities.ServerCapabilitiesConstants.HOVER_ID;
+import static com.redhat.qute.settings.capabilities.ServerCapabilitiesConstants.LINKED_EDITING_RANGE_ID;
+import static com.redhat.qute.settings.capabilities.ServerCapabilitiesConstants.REFERENCES_ID;
 import static com.redhat.qute.settings.capabilities.ServerCapabilitiesConstants.TEXT_DOCUMENT_CODE_ACTION;
 import static com.redhat.qute.settings.capabilities.ServerCapabilitiesConstants.TEXT_DOCUMENT_CODE_LENS;
 import static com.redhat.qute.settings.capabilities.ServerCapabilitiesConstants.TEXT_DOCUMENT_COMPLETION;
@@ -26,6 +28,8 @@ import static com.redhat.qute.settings.capabilities.ServerCapabilitiesConstants.
 import static com.redhat.qute.settings.capabilities.ServerCapabilitiesConstants.TEXT_DOCUMENT_HIGHLIGHT;
 import static com.redhat.qute.settings.capabilities.ServerCapabilitiesConstants.TEXT_DOCUMENT_HOVER;
 import static com.redhat.qute.settings.capabilities.ServerCapabilitiesConstants.TEXT_DOCUMENT_LINK;
+import static com.redhat.qute.settings.capabilities.ServerCapabilitiesConstants.TEXT_DOCUMENT_LINKED_EDITING_RANGE;
+import static com.redhat.qute.settings.capabilities.ServerCapabilitiesConstants.TEXT_DOCUMENT_REFERENCES;
 import static com.redhat.qute.settings.capabilities.ServerCapabilitiesConstants.WORKSPACE_EXECUTE_COMMAND;
 import static com.redhat.qute.settings.capabilities.ServerCapabilitiesConstants.WORKSPACE_EXECUTE_COMMAND_ID;
 
@@ -88,12 +92,12 @@ public class QuteCapabilityManager {
 		if (this.getClientCapabilities().isDocumentLinkDynamicRegistered()) {
 			registerCapability(DOCUMENT_LINK_ID, TEXT_DOCUMENT_LINK, DEFAULT_DOCUMENT_LINK_OPTIONS);
 		}
-		/*
-		 * (this.getClientCapabilities().isFormattingDynamicRegistered()) {
-		 * registerCapability(FORMATTING_ID, TEXT_DOCUMENT_FORMATTING); } if
-		 * (this.getClientCapabilities().isFormattingDynamicRegistered()) {
-		 * registerCapability(RANGE_FORMATTING_ID, TEXT_DOCUMENT_RANGE_FORMATTING); }
-		 */
+		if (this.getClientCapabilities().isReferencesDynamicRegistrationSupported()) {
+			registerCapability(REFERENCES_ID, TEXT_DOCUMENT_REFERENCES);
+		}
+		if (this.getClientCapabilities().isLinkedEditingRangeDynamicRegistered()) {
+			registerCapability(LINKED_EDITING_RANGE_ID, TEXT_DOCUMENT_LINKED_EDITING_RANGE);
+		}
 	}
 
 	public void setClientCapabilities(ClientCapabilities clientCapabilities,

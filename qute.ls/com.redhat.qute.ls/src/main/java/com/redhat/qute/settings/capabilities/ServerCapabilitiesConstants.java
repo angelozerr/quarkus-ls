@@ -37,6 +37,9 @@ public class ServerCapabilitiesConstants {
 
 	public static final String TEXT_DOCUMENT_HIGHLIGHT = "textDocument/documentHighlight";
 
+	public static final String TEXT_DOCUMENT_REFERENCES = "textDocument/references";
+
+	public static final String TEXT_DOCUMENT_LINKED_EDITING_RANGE = "textDocument/linkedEditingRange";
 	public static final String WORKSPACE_EXECUTE_COMMAND = "workspace/executeCommand";
 
 	public static final String DOCUMENT_HIGHLIGHT_ID = UUID.randomUUID().toString();
@@ -47,11 +50,13 @@ public class ServerCapabilitiesConstants {
 	public static final String DOCUMENT_LINK_ID = UUID.randomUUID().toString();
 	public static final String FORMATTING_ID = UUID.randomUUID().toString();
 	public static final String RANGE_FORMATTING_ID = UUID.randomUUID().toString();
+
 	public static final String CODE_ACTION_ID = UUID.randomUUID().toString();
 	public static final String CODE_LENS_ID = UUID.randomUUID().toString();
 
 	public static final String WORKSPACE_EXECUTE_COMMAND_ID = UUID.randomUUID().toString();
-
+	public static final String REFERENCES_ID = UUID.randomUUID().toString();
+	public static final String LINKED_EDITING_RANGE_ID = UUID.randomUUID().toString();
 	public static final CompletionOptions DEFAULT_COMPLETION_OPTIONS = new CompletionOptions(false,
 			Arrays.asList("{", "@", "#", "."));
 

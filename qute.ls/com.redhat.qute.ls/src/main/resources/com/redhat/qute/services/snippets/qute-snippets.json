@@ -99,6 +99,15 @@
 		],
 		"description": "Let section"
 	},		
+	"#switch": {
+		"prefix": "switch",
+		"body": [
+			"{#switch ${1:value}}",
+			"\t{#case ${2:case}}$0",
+			"{/switch}"
+		],
+		"description": "Switch section"
+	},		
 	"#with": {
 		"prefix": "with",
 		"body": [
@@ -107,5 +116,14 @@
 			"{/with}"
 		],
 		"description": "With section"
+	},		
+	"#when": {
+		"prefix": "when",
+		"body": [
+			"{#when ${1:value}}",
+			"\t{#is ${2:case}}$0",
+			"{/when}"
+		],
+		"description": "When section"
 	}
 }

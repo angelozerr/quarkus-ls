@@ -55,7 +55,11 @@ public class QuteProject {
 	}
 
 	public String getTemplateId(Path templatePath) {
-		return templateBaseDir.relativize(templatePath).toString().replace('\\', '/');
+		try {
+			return templateBaseDir.relativize(templatePath).toString().replace('\\', '/');
+		} catch (Exception e) {
+			return templatePath.getFileName().toString();
+		}
 	}
 
 	public String getUri() {
@@ -96,7 +100,7 @@ public class QuteProject {
 		if (parent.getKind() == NodeKind.Section) {
 			Section section = (Section) parent;
 			if (section.getSectionKind() == SectionKind.INSERT) {
-				Parameter parameter = section.getParameterAt(0);
+				Parameter parameter = section.getParameterAtIndex(0);
 				if (parameter != null) {
 					try {
 						if (insertParamater == null || insertParamater.equals(parameter.getValue())) {

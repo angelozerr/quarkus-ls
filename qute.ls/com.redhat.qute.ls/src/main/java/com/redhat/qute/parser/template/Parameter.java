@@ -139,4 +139,11 @@ public class Parameter extends Node implements JavaTypeInfoProvider {
 		return canHaveExpression;
 	}
 
+	public boolean isInValue(int offset) {
+		if (!hasValueAssigned()) {
+			return false;
+		}
+		return Node.isIncluded(getStartValue(), getEndValue(), offset);
+	}
+
 }
