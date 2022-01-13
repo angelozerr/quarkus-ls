@@ -59,7 +59,19 @@ public class ExpressionParser {
 			int tokenEnd = scanner.getTokenEnd();
 			switch (token) {
 			case Whitespace:
-				currentParts = null;
+				if (scanner.isInfixNotation()) {
+					Node last = currentParts.getLastChild();
+					if (last instanceof MethodPart) {
+						MethodPart methodPart = (MethodPart) last;
+						if (!methodPart.hasOpenBracket()) {
+							methodPart.setOpenBracket(tokenEnd);
+						} else {
+							methodPart.setCloseBracket(tokenEnd);
+						}
+					}
+				} else {
+					currentParts = null;
+				}
 				break;
 			case NamespacePart:
 				currentParts = new Parts(tokenOffset, tokenEnd);

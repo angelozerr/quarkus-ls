@@ -2,6 +2,8 @@ package com.redhat.qute.parser.expression.scanner;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import javax.sound.midi.SysexMessage;
+
 import org.junit.jupiter.api.Test;
 
 import com.redhat.qute.parser.scanner.Scanner;
@@ -56,10 +58,21 @@ public class ExpressionScannerTest {
 		scanner = ExpressionScanner.createScanner("a b");
 		assertOffsetAndToken(0, TokenType.ObjectPart, "a");
 		assertOffsetAndToken(1, TokenType.Whitespace, " ");
-		assertOffsetAndToken(2, TokenType.ObjectPart, "b");
+		assertOffsetAndToken(2, TokenType.MethodPart, "b");
 		assertOffsetAndToken(3, TokenType.EOS, "");
 	}
 
+	@Test
+	public void testThreeParts() {
+		scanner = ExpressionScanner.createScanner("a b c");
+		assertOffsetAndToken(0, TokenType.ObjectPart, "a");
+		assertOffsetAndToken(1, TokenType.Whitespace, " ");
+		assertOffsetAndToken(2, TokenType.MethodPart, "b");
+		assertOffsetAndToken(3, TokenType.Whitespace, " ");
+		assertOffsetAndToken(4, TokenType.ObjectPart, "c");
+		assertOffsetAndToken(5, TokenType.EOS, "");
+	}
+	
 	@Test
 	public void testNamespaceStartWithObject() {
 		scanner = ExpressionScanner.createScanner("data:foo");
@@ -137,6 +150,21 @@ public class ExpressionScannerTest {
 		assertOffsetAndToken(21, TokenType.EOS, "");
 	}
 
+	@Test
+	public void testInfixNotation() {
+		scanner = ExpressionScanner.createScanner("person.name or 'John'");
+		assertOffsetAndToken(0, TokenType.ObjectPart, "person");
+		assertOffsetAndToken(6, TokenType.Dot, ".");
+		assertOffsetAndToken(7, TokenType.PropertyPart, "name");
+		assertOffsetAndToken(11, TokenType.Whitespace, " ");
+		assertOffsetAndToken(12, TokenType.MethodPart, "or");
+		assertOffsetAndToken(14, TokenType.Whitespace, " ");
+		assertOffsetAndToken(15, TokenType.StartString, "'");
+		assertOffsetAndToken(16, TokenType.String, "John");
+		assertOffsetAndToken(20, TokenType.EndString, "'");
+		assertOffsetAndToken(21, TokenType.EOS, "");
+	}
+	
 	public void assertOffsetAndToken(int tokenOffset, TokenType tokenType) {
 		TokenType token = scanner.scan();
 		assertEquals(tokenOffset, scanner.getTokenOffset());

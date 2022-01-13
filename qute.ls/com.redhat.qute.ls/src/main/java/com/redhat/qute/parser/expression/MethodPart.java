@@ -68,6 +68,10 @@ public class MethodPart extends MemberPart implements ParametersContainer {
 		this.openBracketOffset = openBracketOffset;
 		super.setEnd(openBracketOffset);
 	}
+	
+	public boolean hasOpenBracket() {
+		return openBracketOffset != NULL_VALUE;
+	}
 
 	/**
 	 * Set the close bracket offset.

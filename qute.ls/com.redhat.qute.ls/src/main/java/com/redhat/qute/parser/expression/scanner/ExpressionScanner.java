@@ -36,6 +36,7 @@ public class ExpressionScanner extends AbstractScanner<TokenType, ScannerState> 
 
 	private boolean inMethod;
 	private int bracket;
+	private boolean infixNotation;
 
 	ExpressionScanner(String input, int initialOffset, int endOffset, ScannerState initialState) {
 		super(input, initialOffset, endOffset, initialState, TokenType.Unknown, TokenType.EOS);
@@ -47,12 +48,12 @@ public class ExpressionScanner extends AbstractScanner<TokenType, ScannerState> 
 		if (stream.eos()) {
 			return finishToken(offset, TokenType.EOS);
 		}
-
+		TokenType lastToken = getTokenType();
 		String errorMessage = null;
 		switch (state) {
 
 		case WithinExpression: {
-			if (stream.skipWhitespace()) {
+			if (stream.skipWhitespace()) {				
 				return finishToken(offset, TokenType.Whitespace);
 			}
 			if (stream.advanceIfChar('?')) {
@@ -83,6 +84,10 @@ public class ExpressionScanner extends AbstractScanner<TokenType, ScannerState> 
 				return finishTokenPart(offset, true);
 			}
 			if (stream.skipWhitespace()) {
+				if (lastToken == TokenType.ObjectPart || lastToken == TokenType.PropertyPart) {
+					// name or |
+					infixNotation = true;
+				}
 				state = ScannerState.WithinExpression;
 				return finishToken(offset, TokenType.Whitespace);
 			}
@@ -156,6 +161,9 @@ public class ExpressionScanner extends AbstractScanner<TokenType, ScannerState> 
 			return finishToken(offset, TokenType.PropertyPart);
 		}
 		state = ScannerState.WithinParts;
+		if (infixNotation) {			
+			return finishToken(offset, TokenType.MethodPart);
+		}
 		return finishToken(offset, TokenType.ObjectPart);
 	}
 
@@ -163,4 +171,7 @@ public class ExpressionScanner extends AbstractScanner<TokenType, ScannerState> 
 		return stream.advanceWhileChar(JAVA_IDENTIFIER_PART_PREDICATE) > 0;
 	}
 
+	public boolean isInfixNotation() {
+		return infixNotation;
+	}
 }
