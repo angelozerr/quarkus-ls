@@ -108,6 +108,7 @@ public class QuteValidationSettings {
 		final int prime = 31;
 		int result = 1;
 		result = prime * result + (enabled ? 1231 : 1237);
+		result = prime * result + ((undefinedVariable == null) ? 0 : undefinedVariable.hashCode());
 		return result;
 	}
 
@@ -121,6 +122,11 @@ public class QuteValidationSettings {
 			return false;
 		QuteValidationSettings other = (QuteValidationSettings) obj;
 		if (enabled != other.enabled)
+			return false;
+		if (undefinedVariable == null) {
+			if (other.undefinedVariable != null)
+				return false;
+		} else if (!undefinedVariable.equals(other.undefinedVariable))
 			return false;
 		return true;
 	}

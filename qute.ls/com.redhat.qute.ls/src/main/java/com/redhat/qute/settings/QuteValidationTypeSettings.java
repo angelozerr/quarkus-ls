@@ -13,8 +13,6 @@
 *******************************************************************************/
 package com.redhat.qute.settings;
 
-import java.util.List;
-
 import org.eclipse.lsp4j.DiagnosticSeverity;
 
 /**
@@ -24,8 +22,6 @@ import org.eclipse.lsp4j.DiagnosticSeverity;
 public class QuteValidationTypeSettings {
 
 	private String severity;
-
-	private List<String> excluded;
 
 	/**
 	 * Returns the severity of the validation type.
@@ -45,40 +41,6 @@ public class QuteValidationTypeSettings {
 		this.severity = severity;
 	}
 
-	/**
-	 * Returns the array of properties to ignore for this validation type.
-	 *
-	 * @return the array of properties to ignore for this validation type.
-	 */
-	public List<String> getExcluded() {
-		return excluded;
-	}
-
-	/**
-	 * Set the array of properties to ignore for this validation type.
-	 *
-	 * @param excluded the array of properties to ignore for this validation type.
-	 */
-	public void setExcluded(List<String> excluded) {
-		this.excluded = excluded;
-	}
-
-	/**
-	 * Returns the diagnostic severity according the given property name and null
-	 * otherwise.
-	 *
-	 * @param propertyName the property name.
-	 * @return the diagnostic severity according the given property name and null
-	 *         otherwise.
-	 */
-	public DiagnosticSeverity getDiagnosticSeverity(String propertyName) {
-		DiagnosticSeverity severity = getDiagnosticSeverity();
-		if (severity == null) {
-			return null;
-		}
-		return isExcluded(propertyName) ? null : severity;
-	}
-
 	public DiagnosticSeverity getDiagnosticSeverity() {
 		DiagnosticSeverity[] severities = DiagnosticSeverity.values();
 		for (DiagnosticSeverity severity : severities) {
@@ -89,25 +51,29 @@ public class QuteValidationTypeSettings {
 		return null;
 	}
 
-	/**
-	 * Returns true if the given property name must be excluded and false otherwise.
-	 *
-	 * @param propertyName the property name
-	 * @return true if the given property name must be excluded and false otherwise.
-	 */
-	private boolean isExcluded(String propertyName) {
-		if (excluded == null) {
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((severity == null) ? 0 : severity.hashCode());
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
 			return false;
-		}
-		// Get compiled excluded properties
-		List<String> excludedProperties = getExcluded();
-		for (String excluded : excludedProperties) {
-			// the property name matches an excluded pattern
-			if (excluded.equals(propertyName)) {
-				return true;
-			}
-		}
-		return false;
+		if (getClass() != obj.getClass())
+			return false;
+		QuteValidationTypeSettings other = (QuteValidationTypeSettings) obj;
+		if (severity == null) {
+			if (other.severity != null)
+				return false;
+		} else if (!severity.equals(other.severity))
+			return false;
+		return true;
 	}
 
 }
