@@ -15,12 +15,14 @@ import java.io.File;
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
+import org.eclipse.lsp4j.CompletionList;
 import org.eclipse.lsp4j.Position;
 
 import com.redhat.qute.commons.ProjectInfo;
@@ -42,11 +44,14 @@ import com.redhat.qute.project.datamodel.ExtendedDataModelProject;
 import com.redhat.qute.project.indexing.QuteIndex;
 import com.redhat.qute.project.indexing.QuteIndexer;
 import com.redhat.qute.project.indexing.QuteTemplateIndex;
+import com.redhat.qute.project.tags.UserTag;
+import com.redhat.qute.project.tags.UserTagRegistry;
+import com.redhat.qute.services.completions.CompletionRequest;
 import com.redhat.qute.utils.StringUtils;
 
 /**
  * A Qute project.
- * 
+ *
  * @author Angelo ZERR
  *
  */
@@ -66,6 +71,8 @@ public class QuteProject {
 
 	private final QuteDataModelProjectProvider dataModelProvider;
 
+	private final UserTagRegistry tagRegistry;
+
 	public QuteProject(ProjectInfo projectInfo, QuteDataModelProjectProvider dataModelProvider) {
 		this.uri = projectInfo.getUri();
 		this.templateBaseDir = createPath(projectInfo.getTemplateBaseDir());
@@ -73,13 +80,14 @@ public class QuteProject {
 		this.openedDocuments = new HashMap<>();
 		this.dataModelProvider = dataModelProvider;
 		this.resolvedJavaTypes = new HashMap<>();
+		this.tagRegistry = new UserTagRegistry(templateBaseDir);
 	}
 
 	/**
 	 * Returns the path for the given file uri.
-	 * 
+	 *
 	 * @param fileUri the file Uri.
-	 * 
+	 *
 	 * @return the path for the given file uri.
 	 */
 	public static Path createPath(String fileUri) {
@@ -97,7 +105,7 @@ public class QuteProject {
 	/**
 	 * Returns the templates base dir folder of the project (ex :
 	 * src/main/resources/templates).
-	 * 
+	 *
 	 * @return the templates base dir folder of the project (ex :
 	 *         src/main/resources/templates).
 	 */
@@ -115,7 +123,7 @@ public class QuteProject {
 
 	/**
 	 * Returns the project Uri.
-	 * 
+	 *
 	 * @return the project Uri.
 	 */
 	public String getUri() {
@@ -145,7 +153,7 @@ public class QuteProject {
 
 	/**
 	 * Open a Qute template.
-	 * 
+	 *
 	 * @param document the Qute template.
 	 */
 	public void onDidOpenTextDocument(TemplateProvider document) {
@@ -154,7 +162,7 @@ public class QuteProject {
 
 	/**
 	 * Close a Qute template.
-	 * 
+	 *
 	 * @param document the Qute template.
 	 */
 	public void onDidCloseTextDocument(TemplateProvider document) {
@@ -237,11 +245,34 @@ public class QuteProject {
 
 	/**
 	 * Returns the template configuration of the project.
-	 * 
+	 *
 	 * @return the template configuration of the project.
 	 */
 	public TemplateConfiguration getTemplateConfiguration() {
 		// TODO : load template configuration from JDT side
 		return null;
+	}
+
+	public Collection<UserTag> getUserTags() {
+		return tagRegistry.getUserTags();
+	}
+
+	public UserTag findUserTag(String tagName) {
+		Collection<UserTag> tags = getUserTags();
+		for (UserTag userTag : tags) {
+			if (tagName.equals(userTag.getName())) {
+				return userTag;
+			}
+		}
+		return null;
+	}
+
+	public Path getTagsDir() {
+		return tagRegistry.getTagsDir();
+	}
+
+	public void collectSnippetSuggestions(CompletionRequest completionRequest, String prefixFilter, String suffixToFind,
+			CompletionList list) {
+		tagRegistry.collectSnippetSuggestions(completionRequest, prefixFilter, suffixToFind, list);
 	}
 }

@@ -16,6 +16,8 @@ import java.util.concurrent.CompletableFuture;
 import org.eclipse.lsp4j.CompletionList;
 import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 
+import com.redhat.qute.parser.template.Template;
+import com.redhat.qute.project.QuteProject;
 import com.redhat.qute.settings.QuteCompletionSettings;
 import com.redhat.qute.settings.QuteFormattingSettings;
 
@@ -42,6 +44,13 @@ public class QuteCompletionForTagSection {
 	public void doCompleteTagSection(CompletionRequest completionRequest, String filterPrefix,
 			QuteCompletionSettings completionSettings, QuteFormattingSettings formattingSettings,
 			CancelChecker cancelChecker, CompletionList list) {
+		// Completion for user tags
+		Template template = completionRequest.getTemplate();
+		QuteProject project = template.getProject();
+		if (project != null) {
+			project.collectSnippetSuggestions(completionRequest, filterPrefix, "}", list);
+		}
+		// Completion for #for, #if, etc
 		completionsForSnippets.collectSnippetSuggestions(completionRequest, filterPrefix, "}", list);
 	}
 

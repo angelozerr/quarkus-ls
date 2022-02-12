@@ -49,6 +49,7 @@ import com.redhat.qute.project.QuteProject;
 import com.redhat.qute.project.datamodel.ExtendedDataModelParameter;
 import com.redhat.qute.project.datamodel.JavaDataModelCache;
 import com.redhat.qute.project.indexing.QuteIndex;
+import com.redhat.qute.project.tags.UserTag;
 import com.redhat.qute.services.definition.DefinitionRequest;
 import com.redhat.qute.utils.QutePositionUtility;
 import com.redhat.qute.utils.QuteSearchUtils;
@@ -139,34 +140,44 @@ class QuteDefinition {
 			List<LocationLink> locations) {
 		if (section.isInStartTagName(offset)) {
 
-			// 1. Jump to custom tag declared in the the {#insert custom-tag of the included
-			// Qute template (by using {#include base).
 			if (section.getSectionKind() == SectionKind.CUSTOM) {
 				QuteProject project = template.getProject();
 				if (project != null) {
-					Range originRange = null;
-					Node parent = section.getParent();
-					while (parent != null) {
-						if (parent.getKind() == NodeKind.Section) {
-							Section parentSection = (Section) parent;
-							if (parentSection.getSectionKind() == SectionKind.INCLUDE) {
-								IncludeSection includeSection = (IncludeSection) parentSection;
-								List<QuteIndex> indexes = project.findInsertTagParameter(
-										includeSection.getReferencedTemplateId(), section.getTag());
-								if (indexes != null) {
-									for (QuteIndex index : indexes) {
-										String linkedTemplateUri = index.getTemplatePath().toUri().toString();
-										Range linkedTargetRange = index.getRange();
-										if (originRange == null) {
-											originRange = QutePositionUtility.selectStartTagName(section);
+					String tagName = section.getTag();
+					UserTag userTag = project.findUserTag(tagName);
+					if (userTag != null) {
+						String userTagUri = userTag.getUri();
+						Range targetRange = new Range(new Position(0, 0), new Position(0, 0));
+						Range originRange = QutePositionUtility.selectStartTagName(section);
+						locations.add(new LocationLink(userTagUri, targetRange, targetRange, originRange));
+					} else {
+						// 1. Jump to custom tag declared in the the {#insert custom-tag of the included
+						// Qute template (by using {#include base).
+
+						Range originRange = null;
+						Node parent = section.getParent();
+						while (parent != null) {
+							if (parent.getKind() == NodeKind.Section) {
+								Section parentSection = (Section) parent;
+								if (parentSection.getSectionKind() == SectionKind.INCLUDE) {
+									IncludeSection includeSection = (IncludeSection) parentSection;
+									List<QuteIndex> indexes = project
+											.findInsertTagParameter(includeSection.getReferencedTemplateId(), tagName);
+									if (indexes != null) {
+										for (QuteIndex index : indexes) {
+											String linkedTemplateUri = index.getTemplatePath().toUri().toString();
+											Range linkedTargetRange = index.getRange();
+											if (originRange == null) {
+												originRange = QutePositionUtility.selectStartTagName(section);
+											}
+											locations.add(new LocationLink(linkedTemplateUri, linkedTargetRange,
+													linkedTargetRange, originRange));
 										}
-										locations.add(new LocationLink(linkedTemplateUri, linkedTargetRange,
-												linkedTargetRange, originRange));
 									}
 								}
 							}
+							parent = parent.getParent();
 						}
-						parent = parent.getParent();
 					}
 				}
 			}

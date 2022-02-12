@@ -11,11 +11,12 @@
 *******************************************************************************/
 package com.redhat.qute.services;
 
-import static com.redhat.qute.services.diagnostics.QuteDiagnosticContants.QUTE_SOURCE;
+import static com.redhat.qute.services.diagnostics.DiagnosticDataFactory.createDiagnostic;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -26,7 +27,6 @@ import java.util.logging.Logger;
 
 import org.eclipse.lsp4j.Diagnostic;
 import org.eclipse.lsp4j.DiagnosticSeverity;
-import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 
@@ -56,17 +56,19 @@ import com.redhat.qute.parser.template.Template;
 import com.redhat.qute.parser.template.sections.IncludeSection;
 import com.redhat.qute.parser.template.sections.LoopSection;
 import com.redhat.qute.project.JavaMemberResult;
+import com.redhat.qute.project.QuteProject;
 import com.redhat.qute.project.datamodel.JavaDataModelCache;
+import com.redhat.qute.project.indexing.QuteIndex;
+import com.redhat.qute.project.tags.UserTag;
 import com.redhat.qute.services.diagnostics.DiagnosticDataFactory;
-import com.redhat.qute.services.diagnostics.IQuteErrorCode;
+import com.redhat.qute.services.diagnostics.QuteDiagnosticsForSyntax;
 import com.redhat.qute.services.diagnostics.QuteErrorCode;
 import com.redhat.qute.services.diagnostics.ResolvingJavaTypeContext;
 import com.redhat.qute.settings.QuteValidationSettings;
 import com.redhat.qute.utils.QutePositionUtility;
 import com.redhat.qute.utils.StringUtils;
 
-import io.quarkus.qute.Engine;
-import io.quarkus.qute.TemplateException;
+import io.quarkus.qute.UserTagSectionHelper;
 
 /**
  * Qute diagnostics support.
@@ -79,6 +81,8 @@ class QuteDiagnostics {
 	private static final ResolvedJavaTypeInfo RESOLVING_JAVA_TYPE = new ResolvedJavaTypeInfo();
 
 	private final JavaDataModelCache javaCache;
+
+	private final QuteDiagnosticsForSyntax diagnosticsForSyntax;
 
 	private class ResolutionContext extends HashMap<String, ResolvedJavaTypeInfo> {
 
@@ -137,6 +141,7 @@ class QuteDiagnostics {
 
 	public QuteDiagnostics(JavaDataModelCache javaCache) {
 		this.javaCache = javaCache;
+		this.diagnosticsForSyntax = new QuteDiagnosticsForSyntax();
 	}
 
 	/**
@@ -166,7 +171,7 @@ class QuteDiagnostics {
 		}
 		List<Diagnostic> diagnostics = new ArrayList<Diagnostic>();
 		try {
-			validateWithRealQuteParser(template, diagnostics);
+			diagnosticsForSyntax.validateWithRealQuteParser(template, diagnostics);
 			validateDataModel(template, template, resolvingJavaTypeContext, new ResolutionContext(), diagnostics);
 		} catch (CancellationException e) {
 			throw e;
@@ -175,23 +180,6 @@ class QuteDiagnostics {
 		}
 		cancelChecker.checkCanceled();
 		return diagnostics;
-	}
-
-	private void validateWithRealQuteParser(Template template, List<Diagnostic> diagnostics) {
-		Engine engine = Engine.builder().addDefaults().build();
-		String templateContent = template.getText();
-		try {
-			engine.parse(templateContent);
-		} catch (TemplateException e) {
-			String message = e.getMessage();
-			int line = e.getOrigin().getLine() - 1;
-			Position start = new Position(line, e.getOrigin().getLineCharacterStart() - 1);
-			Position end = new Position(line, e.getOrigin().getLineCharacterEnd() - 1);
-			Range range = new Range(start, end);
-			Diagnostic diagnostic = createDiagnostic(range, message, DiagnosticSeverity.Error,
-					QuteErrorCode.SyntaxError);
-			diagnostics.add(diagnostic);
-		}
 	}
 
 	private void validateDataModel(Node parent, Template template, ResolvingJavaTypeContext resolvingJavaTypeContext,
@@ -259,6 +247,7 @@ class QuteDiagnostics {
 					validateIncludeSection((IncludeSection) section, diagnostics);
 					break;
 				default:
+					validateSectionTag(section, template, diagnostics);
 				}
 				break;
 			}
@@ -270,6 +259,46 @@ class QuteDiagnostics {
 			default:
 			}
 			validateDataModel(node, template, resolvingJavaTypeContext, currentContext, diagnostics);
+		}
+	}
+
+	private static void validateSectionTag(Section section, Template template,  List<Diagnostic> diagnostics) {
+		String tagName = section.getTag();
+		if (StringUtils.isEmpty(tagName)) {
+			return;
+		}
+		SectionKind sectionKind = section.getSectionKind();
+		if (sectionKind == SectionKind.CUSTOM) {
+			QuteProject project = template.getProject();
+			if (project != null) {
+				Collection<UserTag> tags = project.getUserTags();
+				for (UserTag userTag : tags) {
+					if(tagName.equals(userTag.getName())) {
+						return;
+					}
+				}
+			}
+			
+			Node parent = section.getParent();
+			while (parent != null) {
+				if (parent.getKind() == NodeKind.Section) {
+					Section parentSection = (Section) parent;
+					if (parentSection.getSectionKind() == SectionKind.INCLUDE) {
+						IncludeSection includeSection = (IncludeSection) parentSection;
+						List<QuteIndex> indexes = project
+								.findInsertTagParameter(includeSection.getReferencedTemplateId(), tagName);
+						if (indexes != null) {
+							return;
+						}
+					}
+				}
+				parent = parent.getParent();
+			}
+			
+			Range range = QutePositionUtility.selectStartTagName(section);
+			Diagnostic diagnostic = createDiagnostic(range, DiagnosticSeverity.Error,
+					QuteErrorCode.UndefinedSectionTag, tagName);
+			diagnostics.add(diagnostic);
 		}
 	}
 
@@ -790,18 +819,5 @@ class QuteDiagnostics {
 			}
 		}
 		return resolvedJavaType;
-	}
-
-	private static Diagnostic createDiagnostic(Range range, DiagnosticSeverity severity, IQuteErrorCode errorCode,
-			Object... arguments) {
-		String message = errorCode.getMessage(arguments);
-		return createDiagnostic(range, message, severity, errorCode);
-	}
-
-	private static Diagnostic createDiagnostic(Range range, String message, DiagnosticSeverity severity,
-			IQuteErrorCode errorCode) {
-		Diagnostic diagnostic = new Diagnostic(range, message, severity, QUTE_SOURCE,
-				errorCode != null ? errorCode.getCode() : null);
-		return diagnostic;
 	}
 }

@@ -21,29 +21,40 @@ import org.eclipse.lsp4j.MarkupKind;
 import org.eclipse.lsp4j.Range;
 
 import com.redhat.qute.ls.commons.BadLocationException;
+import com.redhat.qute.ls.commons.snippets.Snippet;
 import com.redhat.qute.ls.commons.snippets.SnippetRegistry;
 import com.redhat.qute.parser.template.Node;
 import com.redhat.qute.parser.template.Template;
 import com.redhat.qute.services.snippets.IQuteSnippetContext;
 import com.redhat.qute.utils.QutePositionUtility;
 
-public class QuteCompletionsForSnippets {
+public class QuteCompletionsForSnippets<T extends Snippet> {
 
 	private static final Logger LOGGER = Logger.getLogger(QuteCompletionsForSnippets.class.getName());
 
-	private SnippetRegistry snippetRegistry;
+	private SnippetRegistry<T> snippetRegistry;
+
+	private final boolean loadDefault;
+
+	public QuteCompletionsForSnippets() {
+		this(true);
+	}
+
+	public QuteCompletionsForSnippets(boolean loadDefault) {
+		this.loadDefault = loadDefault;
+	}
 
 	/**
 	 * Collect snippets suggestions.
 	 *
 	 * @param completionRequest completion request.
 	 * @param prefixFilter      prefix filter.
-	 * @param suffixToFind     suffix to found to eat it when completion snippet is
+	 * @param suffixToFind      suffix to found to eat it when completion snippet is
 	 *                          applied.
 	 * @param list              completion list to update.
 	 */
-	public void collectSnippetSuggestions(CompletionRequest completionRequest, String prefixFilter,
-			String suffixToFind, CompletionList list) {
+	public void collectSnippetSuggestions(CompletionRequest completionRequest, String prefixFilter, String suffixToFind,
+			CompletionList list) {
 		Node node = completionRequest.getNode();
 		int offset = completionRequest.getOffset();
 		Template template = node.getOwnerTemplate();
@@ -156,9 +167,9 @@ public class QuteCompletionsForSnippets {
 		return QutePositionUtility.createRange(replaceStart, replaceEnd, template);
 	}
 
-	private SnippetRegistry getSnippetRegistry() {
+	protected SnippetRegistry<T> getSnippetRegistry() {
 		if (snippetRegistry == null) {
-			snippetRegistry = new SnippetRegistry();
+			snippetRegistry = new SnippetRegistry<T>(null, loadDefault);
 		}
 		return snippetRegistry;
 	}
