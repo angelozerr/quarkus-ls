@@ -419,7 +419,7 @@ class QuteDiagnostics {
 
 			case Object: {
 				ObjectPart objectPart = (ObjectPart) current;
-				resolvedJavaType = validateObjectPart(objectPart, ownerSection, projectUri, resolutionContext,
+				resolvedJavaType = validateObjectPart(objectPart, ownerSection, template, projectUri, resolutionContext,
 						diagnostics, resolvingJavaTypeContext);
 				if (resolvedJavaType == null) {
 					// The Java type of the object part cannot be resolved, stop the validation of
@@ -510,7 +510,7 @@ class QuteDiagnostics {
 		return namespace;
 	}
 
-	private ResolvedJavaTypeInfo validateObjectPart(ObjectPart objectPart, Section ownerSection, String projectUri,
+	private ResolvedJavaTypeInfo validateObjectPart(ObjectPart objectPart, Section ownerSection, Template template, String projectUri,
 			ResolutionContext resolutionContext, List<Diagnostic> diagnostics,
 			ResolvingJavaTypeContext resolvingJavaTypeContext) {
 		// Check if object part is a property coming from #with
@@ -530,6 +530,14 @@ class QuteDiagnostics {
 				// The data model is not loaded, ignore the error of undefined variable
 				return null;
 			}
+			QuteProject project = template.getProject();
+			if (project != null) {
+				if (project.isUserTag(template)) {
+					// It's an user tag, we
+					return null;
+				}
+			}
+		
 			// ex : {item} --> undefined variable
 			Range range = QutePositionUtility.createRange(objectPart);
 			Diagnostic diagnostic = createDiagnostic(range, DiagnosticSeverity.Warning, QuteErrorCode.UndefinedVariable,
