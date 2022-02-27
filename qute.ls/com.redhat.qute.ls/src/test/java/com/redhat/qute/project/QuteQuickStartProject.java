@@ -13,16 +13,19 @@ package com.redhat.qute.project;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.redhat.qute.commons.InvalidMethodReason;
 import com.redhat.qute.commons.JavaTypeInfo;
 import com.redhat.qute.commons.JavaTypeKind;
 import com.redhat.qute.commons.ProjectInfo;
 import com.redhat.qute.commons.ResolvedJavaTypeInfo;
-import com.redhat.qute.commons.ValueResolver;
 import com.redhat.qute.commons.datamodel.DataModelParameter;
 import com.redhat.qute.commons.datamodel.DataModelTemplate;
+import com.redhat.qute.commons.datamodel.resolvers.NamespaceResolverInfo;
+import com.redhat.qute.commons.datamodel.resolvers.ValueResolverInfo;
 import com.redhat.qute.ls.api.QuteDataModelProjectProvider;
 import com.redhat.qute.ls.api.QuteUserTagProvider;
 
@@ -47,6 +50,8 @@ public class QuteQuickStartProject extends MockQuteProject {
 
 		createResolvedJavaTypeInfo("org.acme", cache).setKind(JavaTypeKind.Package);
 
+		createResolvedJavaTypeInfo("java.lang.Object", cache);
+
 		ResolvedJavaTypeInfo string = createResolvedJavaTypeInfo("java.lang.String", cache);
 		registerField("UTF16 : byte", string);
 		registerMethod("isEmpty() : boolean", string);
@@ -62,6 +67,9 @@ public class QuteQuickStartProject extends MockQuteProject {
 		createResolvedJavaTypeInfo("java.lang.Long", cache);
 		createResolvedJavaTypeInfo("java.lang.Float", cache);
 		createResolvedJavaTypeInfo("java.math.BigInteger", cache);
+
+		ResolvedJavaTypeInfo bean = createResolvedJavaTypeInfo("org.acme.Bean", cache);
+		registerField("bean : java.lang.String", bean);
 
 		ResolvedJavaTypeInfo review = createResolvedJavaTypeInfo("org.acme.Review", cache);
 		registerField("name : java.lang.String", review);
@@ -104,7 +112,7 @@ public class QuteQuickStartProject extends MockQuteProject {
 		ResolvedJavaTypeInfo itemResource = createResolvedJavaTypeInfo("org.acme.ItemResource", cache);
 		registerMethod("discountedPrice(item : org.acme.Item) : java.math.BigDecimal", itemResource);
 
-		// RRawString for raw and safe resolver tests
+		// RawString for raw and safe resolver tests
 		ResolvedJavaTypeInfo rawString = createResolvedJavaTypeInfo("io.quarkus.qute.RawString", cache);
 		registerMethod("getValue() : java.lang.String", rawString);
 		registerMethod("toString() : java.lang.String", rawString);
@@ -130,12 +138,22 @@ public class QuteQuickStartProject extends MockQuteProject {
 	}
 
 	@Override
-	protected List<ValueResolver> createValueResolvers() {
-		List<ValueResolver> resolvers = new ArrayList<>();
+	protected List<ValueResolverInfo> createValueResolvers() {
+		List<ValueResolverInfo> resolvers = new ArrayList<>();
+
+		// Method value resolvers
+		// No namespace
 		resolvers.add(createValueResolver("discountedPrice(item : org.acme.Item) : java.math.BigDecimal",
-				"org.acme.ItemResource"));
+				"org.acme.ItemResource", null));
 		resolvers.add(createValueResolver("getByIndex(list : java.util.List<T>, index : int) : T",
-				"io.quarkus.qute.runtime.extensions.CollectionTemplateExtensions"));
+				"io.quarkus.qute.runtime.extensions.CollectionTemplateExtensions", null));
+		// 'config' namespace
+		resolvers.add(createValueResolver("getConfigProperty(propertyName : java.lang.String) : java.lang.Object",
+				"io.quarkus.qute.runtime.extensions.ConfigTemplateExtensions", "config"));
+
+		// Field value resolvers
+		resolvers.add(createValueResolver("bean : java.lang.String", "org.acme.Bean", "inject"));
+
 		return resolvers;
 	}
 
@@ -145,5 +163,16 @@ public class QuteQuickStartProject extends MockQuteProject {
 		createJavaTypeInfo("java.util.List<E>", JavaTypeKind.Interface, cache);
 		createJavaTypeInfo("java.util.Map<K,V>", JavaTypeKind.Interface, cache);
 		return cache;
+	}
+
+	@Override
+	protected Map<String, NamespaceResolverInfo> createNamespaceResolverInfos() {
+		Map<String, NamespaceResolverInfo> infos = new HashMap<>();
+		NamespaceResolverInfo inject = new NamespaceResolverInfo();
+		inject.setNamespaces(Arrays.asList("inject", "cdi"));
+		inject.setDescription("A CDI bean annotated with `@Named` can be referenced in any template through `cdi` and/or `inject` namespaces.");
+		inject.setUrl("https://quarkus.io/guides/qute-reference#injecting-beans-directly-in-templates");
+		infos.put("inject", inject);
+		return infos;
 	}
 }

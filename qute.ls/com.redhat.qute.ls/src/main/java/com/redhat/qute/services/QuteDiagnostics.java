@@ -422,8 +422,8 @@ class QuteDiagnostics {
 
 			case Object: {
 				ObjectPart objectPart = (ObjectPart) current;
-				resolvedJavaType = validateObjectPart(objectPart, ownerSection, template, projectUri, resolutionContext,
-						diagnostics, resolvingJavaTypeContext);
+				resolvedJavaType = validateObjectPart(namespace, objectPart, ownerSection, template, projectUri,
+						resolutionContext, diagnostics, resolvingJavaTypeContext);
 				if (resolvedJavaType == null) {
 					// The Java type of the object part cannot be resolved, stop the validation of
 					// property, method.
@@ -436,7 +436,7 @@ class QuteDiagnostics {
 			case Property: {
 				// java.util.List<org.acme.Item>
 				ResolvedJavaTypeInfo iter = resolvedJavaType;
-				if (resolvedJavaType.isIterable() && !resolvedJavaType.isArray()) {
+				if (resolvedJavaType != null && resolvedJavaType.isIterable() && !resolvedJavaType.isArray()) {
 					// Expression uses iterable type
 					// {@java.util.List<org.acme.Item items>
 					// {items.size()}
@@ -514,10 +514,9 @@ class QuteDiagnostics {
 		return namespace;
 	}
 
-	private ResolvedJavaTypeInfo validateObjectPart(ObjectPart objectPart, Section ownerSection, Template template,
-			String projectUri, ResolutionContext resolutionContext, List<Diagnostic> diagnostics,
+	private ResolvedJavaTypeInfo validateObjectPart(String namespace, ObjectPart objectPart, Section ownerSection,
+			Template template, String projectUri, ResolutionContext resolutionContext, List<Diagnostic> diagnostics,
 			ResolvingJavaTypeContext resolvingJavaTypeContext) {
-		// Check if object part is a property coming from #with
 		JavaMemberInfo javaMember = resolutionContext.findMemberWithObject(objectPart.getPartName(), projectUri);
 		if (javaMember != null) {
 			ResolvedJavaTypeInfo resolvedJavaType = resolveJavaType(javaMember.getJavaElementType(), projectUri,
@@ -692,30 +691,39 @@ class QuteDiagnostics {
 		// to the computed parameter types
 
 		String methodName = methodPart.getPartName();
-		JavaMemberResult result = javaCache.findMethod(resolvedJavaType, methodName, parameterTypes, projectUri);
+		String namespace = methodPart.getNamespace();
+		JavaMemberResult result = javaCache.findMethod(resolvedJavaType, namespace, methodName, parameterTypes,
+				projectUri);
 		JavaMethodInfo method = (JavaMethodInfo) result.getMember();
 		if (method == null) {
-			// ex : {@org.acme.Item item}
-			// "{item.getXXXX()}
 			QuteErrorCode errorCode = QuteErrorCode.UnkwownMethod;
-			InvalidMethodReason reason = javaCache.getInvalidMethodReason(methodName, resolvedJavaType, projectUri);
-			if (reason != null) {
-				switch (reason) {
-				case VoidReturn:
-					errorCode = QuteErrorCode.InvalidMethodVoid;
-					break;
-				case Static:
-					errorCode = QuteErrorCode.InvalidMethodStatic;
-					break;
-				case FromObject:
-					errorCode = QuteErrorCode.InvalidMethodFromObject;
-					break;
-				default:
+			String arg = null;
+			if (namespace != null) {
+				// ex :{config.getXXXX()}
+				errorCode = QuteErrorCode.UnkwownNamespaceResolverMethod;
+				arg = namespace;
+			} else {
+				// ex : {@org.acme.Item item}
+				// {item.getXXXX()}
+				arg = resolvedJavaType.getSignature();
+				InvalidMethodReason reason = javaCache.getInvalidMethodReason(methodName, resolvedJavaType, projectUri);
+				if (reason != null) {
+					switch (reason) {
+					case VoidReturn:
+						errorCode = QuteErrorCode.InvalidMethodVoid;
+						break;
+					case Static:
+						errorCode = QuteErrorCode.InvalidMethodStatic;
+						break;
+					case FromObject:
+						errorCode = QuteErrorCode.InvalidMethodFromObject;
+						break;
+					default:
+					}
 				}
 			}
 			Range range = QutePositionUtility.createRange(methodPart);
-			Diagnostic diagnostic = createDiagnostic(range, DiagnosticSeverity.Error, errorCode, methodName,
-					resolvedJavaType.getSignature());
+			Diagnostic diagnostic = createDiagnostic(range, DiagnosticSeverity.Error, errorCode, methodName, arg);
 			diagnostics.add(diagnostic);
 			return null;
 		}

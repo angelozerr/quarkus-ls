@@ -11,7 +11,6 @@
 *******************************************************************************/
 package com.redhat.qute.services.completions;
 
-import static com.redhat.qute.QuteAssert.SECTION_SNIPPET_SIZE;
 import static com.redhat.qute.QuteAssert.c;
 import static com.redhat.qute.QuteAssert.r;
 import static com.redhat.qute.QuteAssert.testCompletionFor;
@@ -271,8 +270,13 @@ public class QuteCompletionInExpressionTest {
 	public void completionInExpressionWithOnlyStartBracket() throws Exception {
 		String template = "{@org.acme.Item item}\r\n" + //
 				"Item: {|";
-		testCompletionFor(template, 1 + SECTION_SNIPPET_SIZE /* section snippets */, //
-				c("item", "item", r(1, 7, 1, 7)));
+		testCompletionFor(template, //
+				3, //
+				c("item", "item", r(1, 7, 1, 7)), //
+				c("inject:bean : String", "inject:bean", r(1, 7, 1, 7)), //
+				c("config:getConfigProperty(propertyName : String) : Object",
+						"config:getConfigProperty(${1:propertyName})$0", r(1, 7, 1, 7)));
+
 	}
 
 	@Test
@@ -292,8 +296,11 @@ public class QuteCompletionInExpressionTest {
 		// three brackets -> expression
 		template = "{@org.acme.Item item}\r\n" + //
 				"Item: {{{|";
-		testCompletionFor(template, 1 + SECTION_SNIPPET_SIZE /* section snippets */, //
-				c("item", "item", r(1, 9, 1, 9)));
+		testCompletionFor(template, 3, //
+				c("item", "item", r(1, 9, 1, 9)), //
+				c("inject:bean : String", "inject:bean", r(1, 9, 1, 9)), //
+				c("config:getConfigProperty(propertyName : String) : Object",
+						"config:getConfigProperty(${1:propertyName})$0", r(1, 9, 1, 9)));
 	}
 
 	@Test

@@ -27,6 +27,7 @@ public enum QuteErrorCode implements IQuteErrorCode {
 	UndefinedVariable("`{0}` cannot be resolved to a variable."), //
 	UnkwownType("`{0}` cannot be resolved to a type."), //
 	UnkwownMethod("`{0}` cannot be resolved or is not a method of `{1}` Java type."), //
+	UnkwownNamespaceResolverMethod("`{0}` cannot be resolved or is not a method of `{1}` namespace resolver."), //
 	InvalidMethodVoid("Invalid `{0}` method of `{1}` : void return is not allowed."), //
 	InvalidMethodFromObject("Invalid `{0}` method of `{1}` : method from `java.lang.Object` is not allowed."), //
 	InvalidMethodStatic("Invalid `{0}` method of `{1}` : static method is not allowed."), //
