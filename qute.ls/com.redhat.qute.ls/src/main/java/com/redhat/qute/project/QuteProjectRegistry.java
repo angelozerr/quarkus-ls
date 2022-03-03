@@ -14,7 +14,7 @@ package com.redhat.qute.project;
 import static com.redhat.qute.parser.template.LiteralSupport.getPrimitiveObjectType;
 import static com.redhat.qute.services.QuteCompletableFutures.EXTENDED_TEMPLATE_DATAMODEL_NULL_FUTURE;
 import static com.redhat.qute.services.QuteCompletableFutures.FIELD_VALUE_RESOLVERS_NULL_FUTURE;
-import static com.redhat.qute.services.QuteCompletableFutures.JAVA_MEMBER_INFO_NULL_FUTURE;
+import static com.redhat.qute.services.QuteCompletableFutures.JAVA_ELEMENT_INFO_NULL_FUTURE;
 import static com.redhat.qute.services.QuteCompletableFutures.METHOD_VALUE_RESOLVERS_NULL_FUTURE;
 import static com.redhat.qute.services.QuteCompletableFutures.NAMESPACE_RESOLVER_INFO_NULL_FUTURE;
 import static com.redhat.qute.services.QuteCompletableFutures.RESOLVED_JAVA_CLASSINFO_NULL_FUTURE;
@@ -29,6 +29,7 @@ import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.lsp4j.Location;
 
+import com.redhat.qute.commons.JavaElementInfo;
 import com.redhat.qute.commons.JavaFieldInfo;
 import com.redhat.qute.commons.JavaMemberInfo;
 import com.redhat.qute.commons.JavaMethodInfo;
@@ -60,6 +61,7 @@ import com.redhat.qute.project.datamodel.ExtendedDataModelProject;
 import com.redhat.qute.project.datamodel.ExtendedDataModelTemplate;
 import com.redhat.qute.project.datamodel.resolvers.FieldValueResolver;
 import com.redhat.qute.project.datamodel.resolvers.MethodValueResolver;
+import com.redhat.qute.project.datamodel.resolvers.TypeValueResolver;
 import com.redhat.qute.project.datamodel.resolvers.ValueResolver;
 import com.redhat.qute.project.datamodel.resolvers.ValueResolversRegistry;
 import com.redhat.qute.utils.StringUtils;
@@ -646,6 +648,16 @@ public class QuteProjectRegistry implements QuteProjectInfoProvider, QuteDataMod
 		}
 
 		List<ValueResolver> namespaceResolvers = new ArrayList<>();
+		
+		List<TypeValueResolver> allTypeResolvers = dataModel.getTypeValueResolvers();
+		if (allTypeResolvers != null) {
+			for (ValueResolver resolver : allTypeResolvers) {
+				if (isMatchNamespace(resolver, namespace, dataModel)) {
+					namespaceResolvers.add(resolver);
+				}
+			}
+		}
+		
 		List<MethodValueResolver> allMethodResolvers = dataModel.getMethodValueResolvers();
 		if (allMethodResolvers != null) {
 			for (ValueResolver resolver : allMethodResolvers) {
@@ -654,6 +666,7 @@ public class QuteProjectRegistry implements QuteProjectInfoProvider, QuteDataMod
 				}
 			}
 		}
+		
 		List<FieldValueResolver> allFieldResolvers = dataModel.getFieldValueResolvers();
 		if (allFieldResolvers != null) {
 			for (ValueResolver resolver : allFieldResolvers) {
@@ -689,19 +702,26 @@ public class QuteProjectRegistry implements QuteProjectInfoProvider, QuteDataMod
 		return dataModel != null ? dataModel.getAllNamespaces() : Collections.emptySet();
 	}
 
-	public CompletableFuture<JavaMemberInfo> findMemberWithNamespace(String namespace, String partName,
+	public CompletableFuture<JavaElementInfo> findMemberWithNamespace(String namespace, String partName,
 			String projectUri) {
 		if (StringUtils.isEmpty(projectUri)) {
-			return JAVA_MEMBER_INFO_NULL_FUTURE;
+			return JAVA_ELEMENT_INFO_NULL_FUTURE;
 		}
 		QuteProject project = getProject(projectUri);
 		if (project == null) {
-			return JAVA_MEMBER_INFO_NULL_FUTURE;
+			return JAVA_ELEMENT_INFO_NULL_FUTURE;
 		}
 		return project.getDataModelProject() //
 				.thenApply(dataModel -> {
 					if (dataModel == null) {
 						return null;
+					}
+					// Search in types resolvers
+					List<TypeValueResolver> typeResolvers = dataModel.getTypeValueResolvers();
+					for (TypeValueResolver resolver : typeResolvers) {
+						if (isMatchNamespaceResolver(namespace, partName, resolver, dataModel)) {
+							return resolver;
+						}
 					}
 					// Search in methods resolvers
 					List<MethodValueResolver> methodResolvers = dataModel.getMethodValueResolvers();

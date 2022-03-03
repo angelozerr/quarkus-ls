@@ -23,6 +23,7 @@ import com.redhat.qute.commons.JavaElementKind;
 import com.redhat.qute.commons.JavaMemberInfo;
 import com.redhat.qute.commons.JavaMethodInfo;
 import com.redhat.qute.commons.JavaParameterInfo;
+import com.redhat.qute.commons.JavaTypeInfo;
 import com.redhat.qute.commons.ResolvedJavaTypeInfo;
 import com.redhat.qute.commons.datamodel.resolvers.NamespaceResolverInfo;
 import com.redhat.qute.ls.commons.snippets.Snippet;
@@ -40,12 +41,11 @@ public class DocumentationUtils {
 
 	}
 
-	public static MarkupContent getDocumentation(ResolvedJavaTypeInfo resolvedType, boolean markdown) {
-		return getDocumentation(resolvedType, null, markdown);
+	public static MarkupContent getDocumentation(JavaTypeInfo javaType, boolean markdown) {
+		return getDocumentation(javaType, null, markdown);
 	}
 
-	public static MarkupContent getDocumentation(ResolvedJavaTypeInfo resolvedType, String description,
-			boolean markdown) {
+	public static MarkupContent getDocumentation(JavaTypeInfo javaType, String description, boolean markdown) {
 		StringBuilder documentation = new StringBuilder();
 
 		if (description != null) {
@@ -58,7 +58,7 @@ public class DocumentationUtils {
 			documentation.append("```java");
 			documentation.append(System.lineSeparator());
 		}
-		documentation.append(resolvedType.getJavaElementSimpleType());
+		documentation.append(javaType.getJavaElementSimpleType());
 		if (markdown) {
 			documentation.append(System.lineSeparator());
 			documentation.append("```");
@@ -271,7 +271,7 @@ public class DocumentationUtils {
 
 		return createMarkupContent(documentation, markdown);
 	}
-	
+
 	private static void addUrl(String url, StringBuilder documentation, boolean markdown) {
 		if (!StringUtils.isEmpty(url)) {
 			documentation.append(System.lineSeparator());

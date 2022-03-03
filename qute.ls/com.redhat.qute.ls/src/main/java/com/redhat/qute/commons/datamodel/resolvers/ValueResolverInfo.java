@@ -111,8 +111,10 @@ public class ValueResolverInfo {
 	public JavaElementKind getJavaElementKind() {
 		if (signature.contains("(")) {
 			return JavaElementKind.METHOD;
+		} else if (signature.contains(":")) {
+			return JavaElementKind.FIELD;	
 		}
-		return JavaElementKind.FIELD;
+		return JavaElementKind.TYPE;
 	}
 
 	@Override

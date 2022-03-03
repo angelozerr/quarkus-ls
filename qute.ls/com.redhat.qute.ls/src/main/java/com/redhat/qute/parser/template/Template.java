@@ -17,7 +17,7 @@ import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.lsp4j.Position;
 
-import com.redhat.qute.commons.JavaMemberInfo;
+import com.redhat.qute.commons.JavaElementInfo;
 import com.redhat.qute.ls.commons.BadLocationException;
 import com.redhat.qute.ls.commons.TextDocument;
 import com.redhat.qute.parser.CancelChecker;
@@ -239,7 +239,7 @@ public class Template extends Node {
 			return null;
 		}
 		// {inject:bean}
-		JavaMemberInfo member = projectRegistry
+		JavaElementInfo member = projectRegistry
 				.findMemberWithNamespace(namespace, objectPart.getPartName(), getProjectUri()).getNow(null);
 		return (JavaTypeInfoProvider) member;
 	}

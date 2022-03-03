@@ -517,7 +517,7 @@ public class QuteSupportForTemplate {
 		}
 		try {
 			if ("V".equals(method.getReturnType())) {
-				return InvalidMethodReason.VoidReturn;
+//				return InvalidMethodReason.VoidReturn;
 			}
 			if (Flags.isStatic(method.getFlags())) {
 				return InvalidMethodReason.Static;

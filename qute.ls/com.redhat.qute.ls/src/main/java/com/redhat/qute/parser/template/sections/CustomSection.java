@@ -44,7 +44,7 @@ public class CustomSection extends Section {
 		// All parameters can have expression (ex : {#user name=order.item.parent
 		// isActive=false age=10}
 		parameters.forEach(parameter -> {
-			parameter.setCanHaveExpression(parameter.hasValueAssigned());
+			parameter.setCanHaveExpression(true); //parameter.hasValueAssigned());
 		});
 	}
 }

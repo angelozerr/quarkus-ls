@@ -24,6 +24,7 @@ import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 
 import com.redhat.qute.commons.JavaMemberInfo;
+import com.redhat.qute.commons.JavaTypeInfo;
 import com.redhat.qute.commons.ResolvedJavaTypeInfo;
 import com.redhat.qute.ls.commons.BadLocationException;
 import com.redhat.qute.ls.commons.snippets.Snippet;
@@ -223,10 +224,14 @@ public class QuteHover {
 		if (projectUri != null) {
 			// {inject:be|an}
 			return javaCache.findMemberWithNamespace(namespace, part.getPartName(), projectUri) //
-					.thenApply(member -> {
-						if (member == null) {
+					.thenApply(javaElement -> {
+						if (javaElement == null) {
 							return null;
 						}
+						if (javaElement instanceof JavaTypeInfo) {
+							return doHoverForJavaType(part, (JavaTypeInfo) javaElement, hoverRequest);
+						}
+						JavaMemberInfo member = (JavaMemberInfo) javaElement;
 						boolean hasMarkdown = hoverRequest.canSupportMarkupKind(MarkupKind.MARKDOWN);
 						MarkupContent content = DocumentationUtils.getDocumentation(member, null, hasMarkdown);
 						Range range = QutePositionUtility.createRange(part);
@@ -292,14 +297,18 @@ public class QuteHover {
 			HoverRequest hoverRequest) {
 		return javaCache.resolveJavaType(javaType, projectUri) //
 				.thenApply(resolvedJavaType -> {
-					if (resolvedJavaType != null) {
-						boolean hasMarkdown = hoverRequest.canSupportMarkupKind(MarkupKind.MARKDOWN);
-						MarkupContent content = DocumentationUtils.getDocumentation(resolvedJavaType, hasMarkdown);
-						Range range = QutePositionUtility.createRange(part);
-						return new Hover(content, range);
-					}
-					return null;
+					return doHoverForJavaType(part, resolvedJavaType, hoverRequest);
 				});
+	}
+
+	private static Hover doHoverForJavaType(Part part, JavaTypeInfo javaType, HoverRequest hoverRequest) {
+		if (javaType != null) {
+			boolean hasMarkdown = hoverRequest.canSupportMarkupKind(MarkupKind.MARKDOWN);
+			MarkupContent content = DocumentationUtils.getDocumentation(javaType, hasMarkdown);
+			Range range = QutePositionUtility.createRange(part);
+			return new Hover(content, range);
+		}
+		return null;
 	}
 
 	private static SectionMetadata getMetadata(Part part) {

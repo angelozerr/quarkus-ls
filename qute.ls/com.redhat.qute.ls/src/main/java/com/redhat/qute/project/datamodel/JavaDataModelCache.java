@@ -18,6 +18,7 @@ import java.util.concurrent.CompletionStage;
 import org.eclipse.lsp4j.Location;
 
 import com.redhat.qute.commons.InvalidMethodReason;
+import com.redhat.qute.commons.JavaElementInfo;
 import com.redhat.qute.commons.JavaMemberInfo;
 import com.redhat.qute.commons.JavaTypeInfo;
 import com.redhat.qute.commons.QuteJavaDefinitionParams;
@@ -260,7 +261,7 @@ public class JavaDataModelCache implements DataModelTemplateProvider {
 		return projectRegistry.hasNamespace(namespace, projectUri);
 	}
 
-	public CompletableFuture<JavaMemberInfo> findMemberWithNamespace(String namespace, String partName,
+	public CompletableFuture<JavaElementInfo> findMemberWithNamespace(String namespace, String partName,
 			String projectUri) {
 		return projectRegistry.findMemberWithNamespace(namespace, partName, projectUri);
 	}

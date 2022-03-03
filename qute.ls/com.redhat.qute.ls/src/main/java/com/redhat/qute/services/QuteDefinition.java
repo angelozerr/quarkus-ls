@@ -25,6 +25,8 @@ import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 
+import com.redhat.qute.commons.JavaElementInfo;
+import com.redhat.qute.commons.JavaElementKind;
 import com.redhat.qute.commons.JavaMemberInfo;
 import com.redhat.qute.commons.QuteJavaDefinitionParams;
 import com.redhat.qute.commons.ResolvedJavaTypeInfo;
@@ -367,9 +369,14 @@ class QuteDefinition {
 		return findDefinitionFromJavaMember(member, part, projectUri);
 	}
 
-	private CompletableFuture<List<? extends LocationLink>> findDefinitionFromJavaMember(JavaMemberInfo member,
+	private CompletableFuture<List<? extends LocationLink>> findDefinitionFromJavaMember(JavaElementInfo member,
 			Part part, String projectUri) {
-		String sourceType = member != null ? member.getSourceType() : null;
+		if (member == null) {
+			return NO_DEFINITION;
+		}
+
+		String sourceType = member.getJavaElementKind() == JavaElementKind.TYPE ? member.getName()
+				: ((JavaMemberInfo) member).getSourceType();
 		if (sourceType == null) {
 			return NO_DEFINITION;
 		}

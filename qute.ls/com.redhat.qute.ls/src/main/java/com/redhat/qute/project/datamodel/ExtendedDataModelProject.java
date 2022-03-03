@@ -28,10 +28,13 @@ import com.redhat.qute.commons.datamodel.resolvers.NamespaceResolverInfo;
 import com.redhat.qute.parser.expression.NamespacePart;
 import com.redhat.qute.project.datamodel.resolvers.FieldValueResolver;
 import com.redhat.qute.project.datamodel.resolvers.MethodValueResolver;
+import com.redhat.qute.project.datamodel.resolvers.TypeValueResolver;
 
 public class ExtendedDataModelProject extends DataModelProject<ExtendedDataModelTemplate> {
 
 	private final Set<String> allNamespaces;
+
+	private final List<TypeValueResolver> typeValueResolvers;
 
 	private final List<FieldValueResolver> fieldValueResolvers;
 
@@ -43,19 +46,28 @@ public class ExtendedDataModelProject extends DataModelProject<ExtendedDataModel
 		super.setTemplates(createTemplates(project.getTemplates()));
 		super.setNamespaceResolverInfos(project.getNamespaceResolverInfos());
 
+		typeValueResolvers = new ArrayList<>();
 		fieldValueResolvers = new ArrayList<>();
 		methodValueResolvers = new ArrayList<>();
-		updateValueResolvers(fieldValueResolvers, methodValueResolvers, project);
+		updateValueResolvers(typeValueResolvers, fieldValueResolvers, methodValueResolvers, project);
 		allNamespaces = getAllNamespaces(project);
 		similarNamespaces = getSimilarNamespaces(project);
 	}
 
-	private static void updateValueResolvers(List<FieldValueResolver> fieldValueResolvers,
-			List<MethodValueResolver> methodValueResolvers,
+	private static void updateValueResolvers(List<TypeValueResolver> typeValueResolvers,
+			List<FieldValueResolver> fieldValueResolvers, List<MethodValueResolver> methodValueResolvers,
 			DataModelProject<DataModelTemplate<DataModelParameter>> project) {
 		project.getValueResolvers().forEach(resolver -> {
 			JavaElementKind kind = resolver.getJavaElementKind();
 			switch (kind) {
+			case TYPE:
+				TypeValueResolver typeValueResolver = new TypeValueResolver();
+				typeValueResolver.setNamed(resolver.getNamed());
+				typeValueResolver.setNamespace(resolver.getNamespace());
+				typeValueResolver.setSignature(resolver.getSignature());
+				typeValueResolver.setSourceType(resolver.getSourceType());
+				typeValueResolvers.add(typeValueResolver);
+				break;
 			case FIELD:
 				FieldValueResolver fieldValueResolver = new FieldValueResolver();
 				fieldValueResolver.setNamed(resolver.getNamed());
@@ -125,6 +137,10 @@ public class ExtendedDataModelProject extends DataModelProject<ExtendedDataModel
 
 	public String getSimilarNamespace(String namespace) {
 		return similarNamespaces.get(namespace);
+	}
+	
+	public List<TypeValueResolver> getTypeValueResolvers() {
+		return typeValueResolvers;
 	}
 
 	/**

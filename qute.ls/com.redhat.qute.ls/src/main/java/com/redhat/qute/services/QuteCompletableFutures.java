@@ -14,7 +14,7 @@ package com.redhat.qute.services;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
-import com.redhat.qute.commons.JavaMemberInfo;
+import com.redhat.qute.commons.JavaElementInfo;
 import com.redhat.qute.commons.ResolvedJavaTypeInfo;
 import com.redhat.qute.commons.datamodel.resolvers.NamespaceResolverInfo;
 import com.redhat.qute.project.datamodel.ExtendedDataModelTemplate;
@@ -38,7 +38,7 @@ public class QuteCompletableFutures {
 	public static final CompletableFuture<NamespaceResolverInfo> NAMESPACE_RESOLVER_INFO_NULL_FUTURE = CompletableFuture
 			.completedFuture(null);
 
-	public static final CompletableFuture<JavaMemberInfo> JAVA_MEMBER_INFO_NULL_FUTURE = CompletableFuture
+	public static final CompletableFuture<JavaElementInfo> JAVA_ELEMENT_INFO_NULL_FUTURE = CompletableFuture
 			.completedFuture(null);
 
 }
