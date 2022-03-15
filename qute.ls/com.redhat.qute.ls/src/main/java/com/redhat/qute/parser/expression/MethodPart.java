@@ -25,7 +25,7 @@ import com.redhat.qute.parser.template.ParametersContainer;
  * Method part.
  * 
  * <p>
- * 	{item.getName()}
+ * {item.getName()}
  * </p>
  * 
  * @author Angelo ZERR
@@ -71,6 +71,17 @@ public class MethodPart extends MemberPart implements ParametersContainer {
 	}
 
 	/**
+	 * Returns true if the method part have '(' bracket and false otherwise (infix
+	 * notation,like {item or}).
+	 * 
+	 * @return true if the method part have '(' bracket and false otherwise (infix
+	 *         notation,like {item or}).
+	 */
+	public boolean hasOpenBracket() {
+		return openBracketOffset != NULL_VALUE;
+	}
+
+	/**
 	 * Set the close bracket offset.
 	 *
 	 * <p>
@@ -82,6 +93,15 @@ public class MethodPart extends MemberPart implements ParametersContainer {
 	void setCloseBracket(int closeBracketOffset) {
 		this.closeBracketOffset = closeBracketOffset;
 		super.setEnd(closeBracketOffset);
+	}
+
+	/**
+	 * Returns true if the method part have ')' bracket and false otherwise.
+	 * 
+	 * @return true if the method part have ')' bracket and false otherwise.
+	 */
+	public boolean hasCloseBracket() {
+		return closeBracketOffset != NULL_VALUE;
 	}
 
 	// ---------------------------- Parameters methods
@@ -180,9 +200,32 @@ public class MethodPart extends MemberPart implements ParametersContainer {
 
 	@Override
 	public boolean isClosed() {
-		return closeBracketOffset != NULL_VALUE;
+		return hasCloseBracket();
 	}
-	
+
+	/**
+	 * Returns true if the method is used in 'Infix Notation' context and false
+	 * otherwise.
+	 *
+	 * <ul>
+	 * <li>Infix notation : <code>
+	 * {name or 'John'}
+	 * </code></li>
+	 * <li>
+	 * <li>NO Infix notation : <code>
+	 * {name.or('John')}
+	 * </code></li> *</li>
+	 * </ul>
+	 * 
+	 * @return true if the method is used in 'Infix Notation' context and false
+	 *         otherwise.
+	 * 
+	 * @see https://quarkus.io/guides/qute-reference#virtual_methods
+	 */
+	public boolean isInfixNotation() {
+		return false;
+	}
+
 	@Override
 	protected void accept0(ASTVisitor visitor) {
 		visitor.visit(this);

@@ -15,9 +15,13 @@ public enum TokenType {
 	NamespacePart, //
 	ObjectPart, //
 	PropertyPart, //
+	OpenAngleBracket, //
+	CloseAngleBracket, //
 	MethodPart, //
 	OpenBracket, //
 	CloseBracket, //
+	InfixMethodPart, //
+	InfixParameter, //
 
 	Dot, //
 	ColonSpace, //

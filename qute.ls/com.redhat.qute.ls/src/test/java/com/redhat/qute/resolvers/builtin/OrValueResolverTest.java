@@ -90,4 +90,34 @@ public class OrValueResolverTest {
 				"See [here](https://quarkus.io/guides/qute-reference#built-in-resolvers) for more informations.", //
 				r(2, 11, 2, 13));
 	}
+	
+	@Test
+	public void hoverWithInfixNotation() throws Exception {
+		String template = "{@org.acme.Item item}\r\n" + //
+				" \r\n" + //
+				"{item.name o|r 'John'}";
+		assertHover(template, "```java" + //
+				System.lineSeparator() + //
+				"T or(Object arg)" + //
+				System.lineSeparator() + //
+				"```" + //
+				System.lineSeparator() + //
+				"Outputs the default value if the previous part cannot be resolved or resolves to `null`." + //
+				System.lineSeparator() + //
+				System.lineSeparator() + //
+				"`Sample`:" + //
+				System.lineSeparator() + //
+				"```qute-html" + //
+				System.lineSeparator() + //
+				"{person.name ?: 'John'}" + //
+				System.lineSeparator() + //
+				"{person.name or 'John'}" + //
+				System.lineSeparator() + //
+				"{person.name.or('John')}" + //
+				System.lineSeparator() + //
+				"```" + //
+				System.lineSeparator() + //
+				"See [here](https://quarkus.io/guides/qute-reference#built-in-resolvers) for more informations.", //
+				r(2, 11, 2, 13));
+	}
 }

@@ -29,28 +29,7 @@ public class QuteCompletionInExpressionTest {
 	public void completionInExpressionForObjectPart() throws Exception {
 		String template = "{@org.acme.Item item}\r\n" + //
 				"Item: {|}";
-		testCompletionFor(template, //
-				c("item", "item", r(1, 7, 1, 7)));
-
-		template = "{@org.acme.Item item}\r\n" + //
-				"Item: {i|}";
-		testCompletionFor(template, //
-				c("item", "item", r(1, 7, 1, 8)));
-
-		template = "{@org.acme.Item item}\r\n" + //
-				"Item: {|i}";
-		testCompletionFor(template, //
-				c("item", "item", r(1, 7, 1, 7)));
-
-		template = "{@org.acme.Item item}\r\n" + //
-				"Item: {i|te}";
-		testCompletionFor(template, //
-				c("item", "item", r(1, 7, 1, 10)));
-
-		template = "{@org.acme.Item item}\r\n" + //
-				"Item: {item|}";
-		testCompletionFor(template, //
-				c("item", "item", r(1, 7, 1, 11)));
+		
 
 		template = "{@org.acme.Item item}\r\n" + //
 				"Item: {item. |}";
@@ -327,5 +306,14 @@ public class QuteCompletionInExpressionTest {
 				"Item: {item.name.codePointCount(|}";
 		testCompletionFor(template, //
 				c("item", "item", r(1, 32, 1, 32)));
+	}
+	
+	@Test
+	public void propertyBracket() throws Exception {
+		String template = "{@org.acme.Item item}\r\n" + //
+				"Item: {item['review'].|}";
+		testCompletionFor(template, //
+				c("name : String", "name", r(1, 19, 1, 19)), //
+				c("average : Integer", "average", r(1, 19, 1, 19)));
 	}
 }
