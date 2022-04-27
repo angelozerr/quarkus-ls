@@ -12,13 +12,15 @@
 package com.redhat.qute.commons;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.eclipse.xtext.xbase.lib.util.ToStringBuilder;
 
 /**
  * Resolved Java type information.
- * 
+ *
  * @author Angelo ZERR
  *
  */
@@ -42,7 +44,7 @@ public class ResolvedJavaTypeInfo extends JavaTypeInfo {
 
 	/**
 	 * Returns list of extended types.
-	 * 
+	 *
 	 * @return list of extended types.
 	 */
 	public List<String> getExtendedTypes() {
@@ -51,7 +53,7 @@ public class ResolvedJavaTypeInfo extends JavaTypeInfo {
 
 	/**
 	 * Set list of extended types.
-	 * 
+	 *
 	 * @param extendedTypes list of extended types.
 	 */
 	public void setExtendedTypes(List<String> extendedTypes) {
@@ -60,7 +62,7 @@ public class ResolvedJavaTypeInfo extends JavaTypeInfo {
 
 	/**
 	 * Returns member fields.
-	 * 
+	 *
 	 * @return member fields.
 	 */
 	public List<JavaFieldInfo> getFields() {
@@ -69,7 +71,7 @@ public class ResolvedJavaTypeInfo extends JavaTypeInfo {
 
 	/**
 	 * Set member fields.
-	 * 
+	 *
 	 * @param fields member fields.
 	 */
 	public void setFields(List<JavaFieldInfo> fields) {
@@ -78,7 +80,7 @@ public class ResolvedJavaTypeInfo extends JavaTypeInfo {
 
 	/**
 	 * Return member methods.
-	 * 
+	 *
 	 * @return member methods.
 	 */
 	public List<JavaMethodInfo> getMethods() {
@@ -87,7 +89,7 @@ public class ResolvedJavaTypeInfo extends JavaTypeInfo {
 
 	/**
 	 * Set member methods.
-	 * 
+	 *
 	 * @param methods member methods.
 	 */
 	public void setMethods(List<JavaMethodInfo> methods) {
@@ -96,7 +98,7 @@ public class ResolvedJavaTypeInfo extends JavaTypeInfo {
 
 	/**
 	 * Returns iterable type and null otherwise.
-	 * 
+	 *
 	 * @return iterable type and null otherwise.
 	 */
 	public String getIterableType() {
@@ -105,7 +107,7 @@ public class ResolvedJavaTypeInfo extends JavaTypeInfo {
 
 	/**
 	 * Set iterable type.
-	 * 
+	 *
 	 * @param iterableType iterable type.
 	 */
 	public void setIterableType(String iterableType) {
@@ -114,7 +116,7 @@ public class ResolvedJavaTypeInfo extends JavaTypeInfo {
 
 	/**
 	 * Returns iterable of and null otherwise.
-	 * 
+	 *
 	 * @return iterable of and null otherwise.
 	 */
 	public void setIterableOf(String iterableOf) {
@@ -123,7 +125,7 @@ public class ResolvedJavaTypeInfo extends JavaTypeInfo {
 
 	/**
 	 * Returns iterable of.
-	 * 
+	 *
 	 * @return iterable of.
 	 */
 	public String getIterableOf() {
@@ -133,7 +135,7 @@ public class ResolvedJavaTypeInfo extends JavaTypeInfo {
 	/**
 	 * Returns true if the Java type is iterable (ex :
 	 * java.util.List<org.acme.item>) and false otherwise.
-	 * 
+	 *
 	 * @return true if the Java type is iterable and false otherwise.
 	 */
 	public boolean isIterable() {
@@ -146,7 +148,7 @@ public class ResolvedJavaTypeInfo extends JavaTypeInfo {
 
 	/**
 	 * Returns true if the Java type is an integer and false otherwise.
-	 * 
+	 *
 	 * @return true if the Java type is an integer and false otherwise.
 	 */
 	public boolean isInteger() {
@@ -186,6 +188,31 @@ public class ResolvedJavaTypeInfo extends JavaTypeInfo {
 		b.add("iterableOf", this.getIterableOf());
 		b.add("iterableType", this.getIterableType());
 		return b.toString();
+	}
+
+	public void applyGeneric(List<JavaParameterInfo> typeParameters) {
+		Map<String, String> generics = new HashMap<>();
+		for (int i = 0; i < typeParameters.size(); i++) {
+			generics.put(getTypeParameters().get(i).getType(), typeParameters.get(i).getType());
+		}
+		for (JavaMethodInfo method : getMethods()) {
+			for (Map.Entry<String, String> entry : generics.entrySet()) {
+				String signature = method.getSignature();
+				String a = "<" + entry.getKey();
+				String b = "<" + entry.getValue();
+				signature = signature.replace(a, b);
+
+				a = entry.getKey() + ">";
+				b = entry.getValue() + ">";
+				signature = signature.replace(a, b);
+
+				a = " : " + entry.getKey();
+				b = " : " + entry.getValue();
+				signature = signature.replace(a, b);
+
+				method.setSignature(signature);
+			}
+		}
 	}
 
 }

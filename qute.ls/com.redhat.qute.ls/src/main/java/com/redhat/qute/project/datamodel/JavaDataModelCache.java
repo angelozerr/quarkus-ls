@@ -64,7 +64,7 @@ public class JavaDataModelCache implements DataModelTemplateProvider {
 		return projectRegistry.getResolversFor(javaType, projectUri);
 	}
 
-	public CompletableFuture<ResolvedJavaTypeInfo> resolveJavaType(String className, String projectUri) {
+	public CompletableFuture<ResolvedJavaTypeInfo> resolveJavaType(String className, String projectUri) {		
 		return projectRegistry.resolveJavaType(className, projectUri);
 	}
 

@@ -219,12 +219,26 @@ public class QuteProjectRegistry implements QuteProjectInfoProvider, QuteDataMod
 		if (project == null) {
 			return RESOLVED_JAVA_CLASSINFO_NULL_FUTURE;
 		}
+
+		String withoutGeneric = javaTypeName;
+		int index = javaTypeName.indexOf('<');
+		if (index != -1) {
+			withoutGeneric = javaTypeName.substring(0, index);
+		}
+
 		CompletableFuture<ResolvedJavaTypeInfo> future = project.getResolvedJavaType(javaTypeName);
 		if (future == null || future.isCancelled() || future.isCompletedExceptionally()) {
-			QuteResolvedJavaTypeParams params = new QuteResolvedJavaTypeParams(javaTypeName, projectUri);
+			QuteResolvedJavaTypeParams params = new QuteResolvedJavaTypeParams(withoutGeneric, projectUri);
 			future = getResolvedJavaType(params) //
 					.thenCompose(c -> {
 						if (c != null) {
+
+							JavaTypeInfo typeInfo = new JavaTypeInfo();
+							typeInfo.setSignature(javaTypeName);
+							//c.setSignature(javaTypeName);
+							c.applyGeneric(typeInfo.getTypeParameters());
+							c.setSignature(javaTypeName);
+
 							// Update members with the resolved class
 							c.getFields().forEach(f -> {
 								f.setJavaType(c);
@@ -240,6 +254,11 @@ public class QuteProjectRegistry implements QuteProjectInfoProvider, QuteDataMod
 											extendedType, projectUri);
 									if (!extendedFuture.isDone()) {
 										resolvingExtendedFutures.add(extendedFuture);
+									} else {
+										extendedFuture.thenApply(e -> {
+											e.applyGeneric(typeInfo.getTypeParameters());
+											return e;
+										});
 									}
 								}
 								if (!resolvingExtendedFutures.isEmpty()) {
@@ -339,7 +358,7 @@ public class QuteProjectRegistry implements QuteProjectInfoProvider, QuteDataMod
 	/**
 	 * Returns the Java member (field or method) from the given Java base type with
 	 * the given property and null otherwise.
-	 * 
+	 *
 	 * @param baseType   the Java base type.
 	 * @param property   the member property (field name or getter method name).
 	 * @param projectUri the project Uri used to search in the extended Java type.
@@ -430,7 +449,7 @@ public class QuteProjectRegistry implements QuteProjectInfoProvider, QuteDataMod
 	/**
 	 * Returns the member method retrieved by the given property or method name and
 	 * null otherwise.
-	 * 
+	 *
 	 * @param baseType          the Java base type.
 	 * @param methodName        property or method name.
 	 * @param getterMethodName  the getter method name.

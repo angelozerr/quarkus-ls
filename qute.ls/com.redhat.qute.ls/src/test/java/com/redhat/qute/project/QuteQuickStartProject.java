@@ -113,8 +113,11 @@ public class QuteQuickStartProject extends MockQuteProject {
 		registerMethod("size() : int", list);
 		registerMethod("get(index : int) : E", list);
 
-		ResolvedJavaTypeInfo map = createResolvedJavaTypeInfo("java.util.Map", cache);
-
+		ResolvedJavaTypeInfo map = createResolvedJavaTypeInfo("java.util.Map<K,V>", cache);		
+		registerMethod("keySet() : java.util.Set<K>", map);
+		registerMethod("values() : java.util.Collection<V>", map);
+		registerMethod("entrySet() : java.util.Set<java.util.Map.Entry<K,V>>", map);
+		
 		ResolvedJavaTypeInfo itemResource = createResolvedJavaTypeInfo("org.acme.ItemResource", cache);
 		registerMethod("discountedPrice(item : org.acme.Item) : java.math.BigDecimal", itemResource);
 
