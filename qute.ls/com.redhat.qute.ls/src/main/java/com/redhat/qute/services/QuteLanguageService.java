@@ -24,6 +24,8 @@ import org.eclipse.lsp4j.DocumentLink;
 import org.eclipse.lsp4j.DocumentSymbol;
 import org.eclipse.lsp4j.Hover;
 import org.eclipse.lsp4j.InlayHint;
+import org.eclipse.lsp4j.InlineValue;
+import org.eclipse.lsp4j.InlineValueContext;
 import org.eclipse.lsp4j.LinkedEditingRanges;
 import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.LocationLink;
@@ -34,6 +36,7 @@ import org.eclipse.lsp4j.SymbolInformation;
 import org.eclipse.lsp4j.WorkspaceEdit;
 import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 
+import com.redhat.qute.ls.api.QuteDebugResolveVariablesProvider;
 import com.redhat.qute.ls.commons.snippets.Snippet;
 import com.redhat.qute.ls.commons.snippets.SnippetRegistry;
 import com.redhat.qute.ls.commons.snippets.SnippetRegistryProvider;
@@ -63,6 +66,7 @@ public class QuteLanguageService implements SnippetRegistryProvider<Snippet> {
 	private final QuteHighlighting highlighting;
 	private final QuteHover hover;
 	private final QuteInlayHint inlayHint;
+	private final QuteInlineValue inlineValue;
 	private final QuteLinkedEditing linkedEditing;
 	private final QuteReference reference;
 	private final QuteRename rename;
@@ -80,6 +84,7 @@ public class QuteLanguageService implements SnippetRegistryProvider<Snippet> {
 		this.highlighting = new QuteHighlighting();
 		this.hover = new QuteHover(javaCache, this);
 		this.inlayHint = new QuteInlayHint(javaCache);
+		this.inlineValue = new QuteInlineValue();
 		this.linkedEditing = new QuteLinkedEditing();
 		this.reference = new QuteReference();
 		this.rename = new QuteRename();
@@ -209,6 +214,12 @@ public class QuteLanguageService implements SnippetRegistryProvider<Snippet> {
 			QuteInlayHintSettings inlayHintSettings, ResolvingJavaTypeContext resolvingJavaTypeContext,
 			CancelChecker cancelChecker) {
 		return inlayHint.getInlayHint(template, range, inlayHintSettings, resolvingJavaTypeContext, cancelChecker);
+	}
+
+	public CompletableFuture<List<InlineValue>> getInlineValue(Template template, Range range,
+			InlineValueContext context, QuteDebugResolveVariablesProvider resolveVariablesProvider,
+			CancelChecker cancelChecker) {
+		return inlineValue.getInlineValue(template, range, context, resolveVariablesProvider, cancelChecker);
 	}
 
 	/**

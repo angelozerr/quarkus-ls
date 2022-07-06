@@ -41,6 +41,7 @@ public class ServerCapabilitiesConstants {
 	public static final String TEXT_DOCUMENT_REFERENCES = "textDocument/references";
 	public static final String TEXT_DOCUMENT_RENAME = "textDocument/rename";
 	public static final String TEXT_DOCUMENT_INLAY_HINT = "textDocument/inlayHint";
+	public static final String TEXT_DOCUMENT_INLINE_VALUE = "textDocument/inlineValue";
 	/* workspace/... */
 	public static final String WORKSPACE_EXECUTE_COMMAND = "workspace/executeCommand";
 	public static final String WORKSPACE_WATCHED_FILES = "workspace/didChangeWatchedFiles";
@@ -62,7 +63,8 @@ public class ServerCapabilitiesConstants {
 	public static final String WORKSPACE_EXECUTE_COMMAND_ID = UUID.randomUUID().toString();
 	public static final String WORKSPACE_WATCHED_FILES_ID = UUID.randomUUID().toString();
 	public static final String INLAY_HINT_ID = UUID.randomUUID().toString();
-
+	public static final String INLINE_VALUE_ID = UUID.randomUUID().toString();
+	
 	/* Default Options */
 	public static final CodeLensOptions DEFAULT_CODELENS_OPTIONS = new CodeLensOptions();
 	public static final CompletionOptions DEFAULT_COMPLETION_OPTIONS = new CompletionOptions(false,

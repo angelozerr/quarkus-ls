@@ -177,6 +177,11 @@
 			<version>${lsp4j.version}</version>
 		</dependency>
 		<dependency>
+			<groupId>org.eclipse.lsp4j</groupId>
+			<artifactId>org.eclipse.lsp4j.debug</artifactId>
+			<version>${lsp4j.version}</version>
+		</dependency>		
+		<dependency>
 			<groupId>io.quarkus.qute</groupId>
 			<artifactId>qute-core</artifactId>
 			<version>${qute.version}</version>

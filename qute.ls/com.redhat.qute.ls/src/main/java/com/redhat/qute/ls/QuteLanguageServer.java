@@ -28,6 +28,7 @@ import org.eclipse.lsp4j.InitializedParams;
 import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.SetTraceParams;
+import org.eclipse.lsp4j.debug.Variable;
 import org.eclipse.lsp4j.services.LanguageClient;
 import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.lsp4j.services.TextDocumentService;
@@ -47,6 +48,8 @@ import com.redhat.qute.commons.datamodel.QuteDataModelProjectParams;
 import com.redhat.qute.commons.usertags.QuteUserTagParams;
 import com.redhat.qute.commons.usertags.UserTagInfo;
 import com.redhat.qute.ls.api.QuteDataModelProjectProvider;
+import com.redhat.qute.ls.api.QuteDebugResolveVariablesParams;
+import com.redhat.qute.ls.api.QuteDebugResolveVariablesProvider;
 import com.redhat.qute.ls.api.QuteJavaDefinitionProvider;
 import com.redhat.qute.ls.api.QuteJavaTypesProvider;
 import com.redhat.qute.ls.api.QuteLanguageClientAPI;
@@ -74,7 +77,7 @@ import com.redhat.qute.settings.capabilities.ServerCapabilitiesInitializer;
  */
 public class QuteLanguageServer implements LanguageServer, ProcessLanguageServer, QuteLanguageServerAPI,
 		QuteProjectInfoProvider, QuteJavaTypesProvider, QuteResolvedJavaTypeProvider, QuteJavaDefinitionProvider,
-		QuteDataModelProjectProvider, QuteUserTagProvider {
+		QuteDataModelProjectProvider, QuteUserTagProvider, QuteDebugResolveVariablesProvider {
 
 	private static final Logger LOGGER = Logger.getLogger(QuteLanguageServer.class.getName());
 
@@ -269,6 +272,11 @@ public class QuteLanguageServer implements LanguageServer, ProcessLanguageServer
 	@Override
 	public CompletableFuture<List<UserTagInfo>> getUserTags(QuteUserTagParams params) {
 		return getLanguageClient().getUserTags(params);
+	}
+	
+	@Override
+	public CompletableFuture<List<? extends Variable>> resolveVariables(QuteDebugResolveVariablesParams params) {
+		return getLanguageClient().resolveVariables(params);
 	}
 
 	public void didChangeWatchedFiles(DidChangeWatchedFilesParams params) {

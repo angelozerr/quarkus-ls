@@ -39,6 +39,8 @@ public class QuteGeneralClientSettings {
 
 	private QuteInlayHintSettings inlayHint;
 
+	private QuteInlineValueSettings inlineValue;
+
 	private QuteValidationSettings validation;
 
 	@SerializedName(value = "native")
@@ -60,6 +62,15 @@ public class QuteGeneralClientSettings {
 	 */
 	public QuteInlayHintSettings getInlayHint() {
 		return inlayHint;
+	}
+
+	/**
+	 * Returns the inline value settings.
+	 * 
+	 * @return the inline value settings.
+	 */
+	public QuteInlineValueSettings getInlineValue() {
+		return inlineValue;
 	}
 
 	/**
@@ -96,6 +107,15 @@ public class QuteGeneralClientSettings {
 	 */
 	public void setInlayHint(QuteInlayHintSettings inlayHint) {
 		this.inlayHint = inlayHint;
+	}
+
+	/**
+	 * Set the inline value settings.
+	 * 
+	 * @param inlineValue the inline value settings.
+	 */
+	public void setInlineValue(QuteInlineValueSettings inlineValue) {
+		this.inlineValue = inlineValue;
 	}
 
 	/**
@@ -146,13 +166,17 @@ public class QuteGeneralClientSettings {
 
 		private final boolean inlayHintSettingsChanged;
 
+		private final boolean inlineValueSettingsChanged;
+
 		private boolean nativeImagesSettingsChanged;
 
 		public SettingsUpdateState(boolean validationSettingsChanged, boolean codeLensSettingsChanged,
-				boolean inlayHintSettingsChanged, boolean nativeImagesSettingsChanged) {
+				boolean inlayHintSettingsChanged, boolean inlineValueSettingsChanged,
+				boolean nativeImagesSettingsChanged) {
 			this.validationSettingsChanged = validationSettingsChanged;
 			this.codeLensSettingsChanged = codeLensSettingsChanged;
 			this.inlayHintSettingsChanged = inlayHintSettingsChanged;
+			this.inlineValueSettingsChanged = inlineValueSettingsChanged;
 			this.nativeImagesSettingsChanged = nativeImagesSettingsChanged;
 		}
 
@@ -181,6 +205,15 @@ public class QuteGeneralClientSettings {
 		 */
 		public boolean isInlayHintSettingsChanged() {
 			return inlayHintSettingsChanged;
+		}
+
+		/**
+		 * Returns true if inline value settings changed and false otherwise.
+		 * 
+		 * @return true if inline value settings changed and false otherwise.
+		 */
+		public boolean isInlineValueSettingsChanged() {
+			return inlineValueSettingsChanged;
 		}
 
 		/**
@@ -218,6 +251,12 @@ public class QuteGeneralClientSettings {
 			inlayHintSettingsChanged = true;
 		}
 
+		// Update inline value settings
+		boolean inlineValueSettingsChanged = updateInlineValueSettings(sharedSettings, clientSettings);
+		if (workspaceChanged) {
+			inlineValueSettingsChanged = true;
+		}
+
 		// Update validation settings
 		boolean validationSettingsChanged = updateValidationSettings(sharedSettings, clientSettings);
 		if (workspaceChanged) {
@@ -231,7 +270,7 @@ public class QuteGeneralClientSettings {
 		}
 
 		return new SettingsUpdateState(validationSettingsChanged, codeLensSettingsChanged, inlayHintSettingsChanged,
-				nativeImagesSettingsChanged);
+				inlineValueSettingsChanged, nativeImagesSettingsChanged);
 	}
 
 	private static boolean updateCodeLensSettings(SharedSettings sharedSettings,
@@ -279,6 +318,31 @@ public class QuteGeneralClientSettings {
 	private static boolean updateInlayHintSettings(BaseSettings sharedSettings, QuteInlayHintSettings inlayHint) {
 		if (inlayHint != null && !inlayHint.equals(sharedSettings.getInlayHintSettings())) {
 			sharedSettings.getInlayHintSettings().update(inlayHint);
+			return true;
+		}
+		return false;
+	}
+
+	private static boolean updateInlineValueSettings(SharedSettings sharedSettings,
+			QuteGeneralClientSettings clientSettings) {
+		// Global inlineValue settings
+		boolean inlineValueSettingsChanged = updateInlineValueSettings(sharedSettings, clientSettings.getInlineValue());
+		// Workspace folder inlineValue settings
+		Map<String, QuteGeneralClientSettings> workspaceFolders = clientSettings.getWorkspaceFolders();
+		if (workspaceFolders != null) {
+			for (Map.Entry<String /* workspace folder Uri */, QuteGeneralClientSettings> entry : workspaceFolders
+					.entrySet()) {
+				String workspaceFolderUri = entry.getKey();
+				BaseSettings settings = sharedSettings.getWorkspaceFolderSettings(workspaceFolderUri);
+				inlineValueSettingsChanged |= updateInlineValueSettings(settings, entry.getValue().getInlineValue());
+			}
+		}
+		return inlineValueSettingsChanged;
+	}
+
+	private static boolean updateInlineValueSettings(BaseSettings sharedSettings, QuteInlineValueSettings inlineValue) {
+		if (inlineValue != null && !inlineValue.equals(sharedSettings.getInlineValueSettings())) {
+			sharedSettings.getInlineValueSettings().update(inlineValue);
 			return true;
 		}
 		return false;

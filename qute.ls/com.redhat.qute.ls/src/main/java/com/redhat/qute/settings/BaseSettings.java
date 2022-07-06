@@ -23,6 +23,8 @@ public class BaseSettings {
 
 	private final QuteInlayHintSettings inlayHintSettings;
 
+	private final QuteInlineValueSettings inlineValueSettings;
+	
 	private final QuteValidationSettings validationSettings;
 
 	private final QuteNativeSettings nativeImagesSettings;
@@ -31,6 +33,7 @@ public class BaseSettings {
 		this.validationSettings = new QuteValidationSettings();
 		this.codeLensSettings = new QuteCodeLensSettings();
 		this.inlayHintSettings = new QuteInlayHintSettings();
+		this.inlineValueSettings = new QuteInlineValueSettings();
 		this.nativeImagesSettings = new QuteNativeSettings();
 	}
 
@@ -50,6 +53,15 @@ public class BaseSettings {
 	 */
 	public QuteInlayHintSettings getInlayHintSettings() {
 		return inlayHintSettings;
+	}
+	
+	/**
+	 * Returns the inline value settings.
+	 * 
+	 * @return the inline value settings.
+	 */
+	public QuteInlineValueSettings getInlineValueSettings() {
+		return inlineValueSettings;
 	}
 
 	/**

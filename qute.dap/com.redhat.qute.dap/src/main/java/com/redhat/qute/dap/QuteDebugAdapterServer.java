@@ -46,6 +46,7 @@ import org.eclipse.lsp4j.debug.VariablesArguments;
 import org.eclipse.lsp4j.debug.VariablesResponse;
 import org.eclipse.lsp4j.debug.services.IDebugProtocolClient;
 import org.eclipse.lsp4j.debug.services.IDebugProtocolServer;
+import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
 
 import com.redhat.qute.dap.model.QuteBreakpoint;
 import com.redhat.qute.dap.model.QuteScope;
@@ -126,7 +127,7 @@ public class QuteDebugAdapterServer implements IDebugProtocolServer {
 	public CompletableFuture<ThreadsResponse> threads() {
 		return CompletableFuture.supplyAsync(() -> {
 			ThreadsResponse response = new ThreadsResponse();
-			Collection<QuteThread> threads = connectionManager.getQuteThreads(true);
+			Collection<QuteThread> threads = connectionManager.getQuteThreads();
 			response.setThreads(threads.toArray(new QuteThread[threads.size()]));
 			return response;
 		});
@@ -162,7 +163,7 @@ public class QuteDebugAdapterServer implements IDebugProtocolServer {
 			VariablesResponse response = new VariablesResponse();
 			int variablesReference = args.getVariablesReference();
 			Set<Variable> variables = new HashSet<>();
-			for (QuteThread quteThread : connectionManager.getQuteThreads(false)) {
+			for (QuteThread quteThread : connectionManager.getQuteThreads()) {
 				quteThread.collectVariables(variablesReference, variables);
 			}
 			response.setVariables(variables.toArray(new Variable[variables.size()]));
@@ -224,4 +225,27 @@ public class QuteDebugAdapterServer implements IDebugProtocolServer {
 		});
 	}
 
+	@JsonRequest
+	public CompletableFuture<VariablesResponse> resolveVariables(ResolveVariableArguments args) {
+		return CompletableFuture.supplyAsync(() -> {
+			int frameId = args.getFrameId();
+			Set<Variable> allVariables = new HashSet<>();
+			io.quarkus.qute.debug.Scope[] scopes = connectionManager.getScopes(frameId);
+			for (int i = 0; i < scopes.length; i++) {
+				int variablesReference = scopes[i].getVariablesReference();
+				io.quarkus.qute.debug.Variable[] variables = connectionManager.getVariables(variablesReference);
+				for (int j = 0; j < variables.length; j++) {
+					io.quarkus.qute.debug.Variable v = variables[j];
+					Variable variable = new Variable();
+					variable.setName(v.getName());
+					variable.setValue(v.getValue());
+					variable.setType(v.getType());
+					allVariables.add(variable);
+				}
+			}
+			VariablesResponse response = new VariablesResponse();
+			response.setVariables(allVariables.toArray(new Variable[allVariables.size()]));
+			return response;
+		});
+	}
 }

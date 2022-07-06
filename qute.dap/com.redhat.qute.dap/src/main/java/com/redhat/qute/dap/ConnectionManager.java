@@ -125,29 +125,9 @@ public class ConnectionManager {
 		return null;
 	}
 
-	public Collection<QuteThread> getQuteThreads(boolean refresh) {
-//		if (refresh) {
-//			
-//		}
-//		if (debuggerClient != null) {
-//			if (threads == null) {
-//				threads = collectThreads();
-//			}
-//			return threads;
-//		}
-//		return Collections.emptySet();
+	public Collection<QuteThread> getQuteThreads() {
 		return threads.values();
 	}
-
-//	private synchronized Set<QuteThread> collectThreads() {
-//		if (threads != null) {
-//			return threads;
-//		}
-//		return debuggerClient.getThreads() //
-//				.stream() //
-//				.map(t -> new QuteThread(t, this)) //
-//				.collect(Collectors.toSet());
-//	}
 
 	public QuteThread findThread(int threadId) {
 		return threads.get(threadId);
