@@ -23,6 +23,7 @@ import java.util.concurrent.CompletableFuture;
 import org.eclipse.lsp4j.CodeAction;
 import org.eclipse.lsp4j.Diagnostic;
 import org.eclipse.lsp4j.Range;
+import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 
 import com.redhat.qute.ls.commons.CodeActionFactory;
 import com.redhat.qute.ls.commons.client.ConfigurationItemEdit;
@@ -124,8 +125,10 @@ public abstract class AbstractQuteCodeAction {
 	 * @param codeActionResolveFutures the code action which contains text edit
 	 *                                 which requires some resolve.
 	 * @param codeActions              the code actions to fill.
+	 * @param cancelChecker            the cancel checker.
 	 */
 	public abstract void doCodeActions(CodeActionRequest request,
-			List<CompletableFuture<Void>> codeActionResolveFutures, List<CodeAction> codeActions);
+			List<CompletableFuture<Void>> codeActionResolveFutures, List<CodeAction> codeActions,
+			CancelChecker cancelChecker);
 
 }

@@ -12,7 +12,6 @@
 package com.redhat.qute.services.codeactions;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.logging.Level;
@@ -20,6 +19,7 @@ import java.util.logging.Logger;
 
 import org.eclipse.lsp4j.CodeAction;
 import org.eclipse.lsp4j.Diagnostic;
+import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 
 import com.redhat.qute.ls.commons.BadLocationException;
 import com.redhat.qute.parser.expression.NamespacePart;
@@ -46,12 +46,13 @@ public class QuteCodeActionForUndefinedNamespace extends AbstractQuteCodeAction 
 
 	@Override
 	public void doCodeActions(CodeActionRequest request, List<CompletableFuture<Void>> codeActionResolveFutures,
-			List<CodeAction> codeActions) {
+			List<CodeAction> codeActions, CancelChecker cancelChecker) {
 		try {
 			Node node = request.getCoveredNode();
 			if (node == null) {
 				return;
 			}
+			cancelChecker.checkCanceled();
 			NamespacePart part = (NamespacePart) node;
 			Template template = request.getTemplate();
 			Diagnostic diagnostic = request.getDiagnostic();
@@ -60,14 +61,14 @@ public class QuteCodeActionForUndefinedNamespace extends AbstractQuteCodeAction 
 			doCodeActionsForSimilarValues(part, template, diagnostic, codeActions);
 
 			// CodeAction to set validation severity to ignore
-			doCodeActionToSetIgnoreSeverity(template, diagnostic,
-					QuteErrorCode.UndefinedNamespace, codeActions, UNDEFINED_NAMESPACE_SEVERITY_SETTING);
+			doCodeActionToSetIgnoreSeverity(template, diagnostic, QuteErrorCode.UndefinedNamespace, codeActions,
+					UNDEFINED_NAMESPACE_SEVERITY_SETTING);
 
 		} catch (BadLocationException e) {
 			LOGGER.log(Level.SEVERE, "Creation of undefined namespace code action failed", e);
 		}
 	}
-	
+
 	private void doCodeActionsForSimilarValues(NamespacePart part, Template template, Diagnostic diagnostic,
 			List<CodeAction> codeActions) throws BadLocationException {
 		Collection<String> availableValues = collectAvailableValuesForNamespacePart(part, template);

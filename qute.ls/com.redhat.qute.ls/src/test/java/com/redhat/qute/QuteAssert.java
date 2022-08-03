@@ -377,7 +377,8 @@ public class QuteAssert {
 
 	public static Diagnostic d(int startLine, int startCharacter, int endLine, int endCharacter, IQuteErrorCode code,
 			String message, Object data, DiagnosticSeverity severity) {
-		Diagnostic diagnostic = d(startLine, startCharacter, endLine, endCharacter, code, message, QUTE_SOURCE, severity);
+		Diagnostic diagnostic = d(startLine, startCharacter, endLine, endCharacter, code, message, QUTE_SOURCE,
+				severity);
 		diagnostic.setData(data);
 		return diagnostic;
 	}
@@ -674,9 +675,12 @@ public class QuteAssert {
 		Template template = createTemplate(value, fileUri, projectUri, templateBaseDir, projectRegistry);
 		QuteLanguageService languageService = new QuteLanguageService(new JavaDataModelCache(projectRegistry));
 
-		List<CodeAction> actual = languageService.doCodeActions(template, context, new QuteTemplateGenerateMissingJavaMember() {
-			// do not attempt to resolve "generate missing java member" code actions in qute-ls unit tests
-		}, range, settings).get();
+		List<CodeAction> actual = languageService
+				.doCodeActions(template, context, new QuteTemplateGenerateMissingJavaMember() {
+					// do not attempt to resolve "generate missing java member" code actions in
+					// qute-ls unit tests
+				}, range, settings, () -> {
+				}).get();
 		assertCodeActions(actual, expected);
 	}
 

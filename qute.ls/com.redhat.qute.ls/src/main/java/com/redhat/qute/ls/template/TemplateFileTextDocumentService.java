@@ -127,17 +127,15 @@ public class TemplateFileTextDocumentService extends AbstractTextDocumentService
 
 	@Override
 	public CompletableFuture<Either<List<CompletionItem>, CompletionList>> completion(CompletionParams params) {
-		return getTemplateCompose(params.getTextDocument(),
-				(template, cancelChecker) -> {
-					return getQuteLanguageService()
-							.doComplete(template, params.getPosition(), sharedSettings.getCompletionSettings(),
-									sharedSettings.getFormattingSettings(), sharedSettings.getNativeSettings(),
-									cancelChecker) //
-							.thenApply(list -> {
-								return Either.forRight(list);
-							});
+		return getTemplateCompose(params.getTextDocument(), (template, cancelChecker) -> {
+			return getQuteLanguageService()
+					.doComplete(template, params.getPosition(), sharedSettings.getCompletionSettings(),
+							sharedSettings.getFormattingSettings(), sharedSettings.getNativeSettings(), cancelChecker) //
+					.thenApply(list -> {
+						return Either.forRight(list);
+					});
 
-				});
+		});
 	}
 
 	@Override
@@ -145,39 +143,35 @@ public class TemplateFileTextDocumentService extends AbstractTextDocumentService
 		if (!sharedSettings.getCodeLensSettings().isEnabled()) {
 			return CompletableFuture.completedFuture(Collections.emptyList());
 		}
-		return getTemplateCompose(params.getTextDocument(),
-				(template, cancelChecker) -> {
-					return getQuteLanguageService().getCodeLens(template, sharedSettings, cancelChecker);
-				});
+		return getTemplateCompose(params.getTextDocument(), (template, cancelChecker) -> {
+			return getQuteLanguageService().getCodeLens(template, sharedSettings, cancelChecker);
+		});
 	}
 
 	@Override
 	public CompletableFuture<List<Either<Command, CodeAction>>> codeAction(CodeActionParams params) {
-		return getTemplateCompose(params.getTextDocument(),
-				(template, cancelChecker) -> {
-					// Cancel checker is not passed to doCodeActions, since code actions don't yet
-					// need to interact with JDT/editor
-					return getQuteLanguageService()
-							.doCodeActions(template, params.getContext(), getLanguageClient(), params.getRange(), sharedSettings) //
-							.thenApply(codeActions -> {
-								cancelChecker.checkCanceled();
-								return codeActions.stream() //
-										.map(ca -> {
-											Either<Command, CodeAction> e = Either.forRight(ca);
-											return e;
-										}) //
-										.collect(Collectors.toList());
-							});
-				});
+		return getTemplateCompose(params.getTextDocument(), (template, cancelChecker) -> {
+			cancelChecker.checkCanceled();
+			return getQuteLanguageService()
+					.doCodeActions(template, params.getContext(), getLanguageClient(), params.getRange(),
+							sharedSettings, cancelChecker) //
+					.thenApply(codeActions -> {
+						cancelChecker.checkCanceled();
+						return codeActions.stream() //
+								.map(ca -> {
+									Either<Command, CodeAction> e = Either.forRight(ca);
+									return e;
+								}) //
+								.collect(Collectors.toList());
+					});
+		});
 	}
 
 	@Override
 	public CompletableFuture<Hover> hover(HoverParams params) {
-		return getTemplateCompose(params.getTextDocument(),
-				(template, cancelChecker) -> {
-					return getQuteLanguageService().doHover(template, params.getPosition(), sharedSettings,
-							cancelChecker);
-				});
+		return getTemplateCompose(params.getTextDocument(), (template, cancelChecker) -> {
+			return getQuteLanguageService().doHover(template, params.getPosition(), sharedSettings, cancelChecker);
+		});
 	}
 
 	@Override
@@ -190,23 +184,22 @@ public class TemplateFileTextDocumentService extends AbstractTextDocumentService
 	@Override
 	public CompletableFuture<Either<List<? extends Location>, List<? extends LocationLink>>> definition(
 			DefinitionParams params) {
-		return getTemplateCompose(params.getTextDocument(),
-				(template, cancelChecker) -> {
-					return getQuteLanguageService() //
-							.findDefinition(template, params.getPosition(), cancelChecker) //
-							.thenApply(definitions -> {
-								cancelChecker.checkCanceled();
-								if (super.isDefinitionLinkSupport()) {
-									return Either.forRight(definitions);
-								}
-								List<? extends Location> locations = definitions //
-										.stream() //
-										.map(locationLink -> QutePositionUtility.toLocation(locationLink)) //
-										.collect(Collectors.toList());
-								return Either.forLeft(locations);
-							});
+		return getTemplateCompose(params.getTextDocument(), (template, cancelChecker) -> {
+			return getQuteLanguageService() //
+					.findDefinition(template, params.getPosition(), cancelChecker) //
+					.thenApply(definitions -> {
+						cancelChecker.checkCanceled();
+						if (super.isDefinitionLinkSupport()) {
+							return Either.forRight(definitions);
+						}
+						List<? extends Location> locations = definitions //
+								.stream() //
+								.map(locationLink -> QutePositionUtility.toLocation(locationLink)) //
+								.collect(Collectors.toList());
+						return Either.forLeft(locations);
+					});
 
-				});
+		});
 	}
 
 	@Override
@@ -267,28 +260,26 @@ public class TemplateFileTextDocumentService extends AbstractTextDocumentService
 		if (!sharedSettings.getInlayHintSettings().isEnabled()) {
 			return CompletableFuture.completedFuture(Collections.emptyList());
 		}
-		return getTemplateCompose(params.getTextDocument(),
-				(template, cancelChecker) -> {
-					// Collect inlay hints
-					ResolvingJavaTypeContext resolvingJavaTypeContext = new ResolvingJavaTypeContext(template,
-							quteLanguageServer.getDataModelCache());
-					CompletableFuture<List<InlayHint>> hints = getQuteLanguageService().getInlayHint(template,
-							params.getRange(), sharedSettings.getInlayHintSettings(), resolvingJavaTypeContext,
-							cancelChecker);
-					if (!resolvingJavaTypeContext.isEmpty()) {
-						// Some Java types was not loaded, wait for that all Java types are resolved to
-						// retrigger the inlay hints.
-						CompletableFuture<Void> allFutures = CompletableFuture.allOf(resolvingJavaTypeContext
-								.toArray(new CompletableFuture[resolvingJavaTypeContext.size()]));
-						return allFutures.thenCompose(Void -> {
-							cancelChecker.checkCanceled();
-							// All Java type are resolved, recompute the inlay hints.
-							return inlayHint(params);
-						});
-					}
-
-					return hints;
+		return getTemplateCompose(params.getTextDocument(), (template, cancelChecker) -> {
+			// Collect inlay hints
+			ResolvingJavaTypeContext resolvingJavaTypeContext = new ResolvingJavaTypeContext(template,
+					quteLanguageServer.getDataModelCache());
+			CompletableFuture<List<InlayHint>> hints = getQuteLanguageService().getInlayHint(template,
+					params.getRange(), sharedSettings.getInlayHintSettings(), resolvingJavaTypeContext, cancelChecker);
+			if (!resolvingJavaTypeContext.isEmpty()) {
+				// Some Java types was not loaded, wait for that all Java types are resolved to
+				// retrigger the inlay hints.
+				CompletableFuture<Void> allFutures = CompletableFuture.allOf(
+						resolvingJavaTypeContext.toArray(new CompletableFuture[resolvingJavaTypeContext.size()]));
+				return allFutures.thenCompose(Void -> {
+					cancelChecker.checkCanceled();
+					// All Java type are resolved, recompute the inlay hints.
+					return inlayHint(params);
 				});
+			}
+
+			return hints;
+		});
 	}
 
 	private QuteLanguageService getQuteLanguageService() {
@@ -312,9 +303,8 @@ public class TemplateFileTextDocumentService extends AbstractTextDocumentService
 		ResolvingJavaTypeContext resolvingJavaTypeContext = new ResolvingJavaTypeContext(template,
 				quteLanguageServer.getDataModelCache());
 		List<Diagnostic> diagnostics = getQuteLanguageService().doDiagnostics(template,
-				getSharedSettings().getValidationSettings(template.getUri()),
-				getSharedSettings().getNativeSettings(), resolvingJavaTypeContext,
-				() -> template.checkCanceled());
+				getSharedSettings().getValidationSettings(template.getUri()), getSharedSettings().getNativeSettings(),
+				resolvingJavaTypeContext, () -> template.checkCanceled());
 
 		// Diagnostics has been collected, before diagnostics publishing, check if the
 		// document has changed since diagnostics collect.
@@ -327,8 +317,8 @@ public class TemplateFileTextDocumentService extends AbstractTextDocumentService
 		if (!resolvingJavaTypeContext.isEmpty()) {
 			// Some Java types was not loaded, wait for that all Java types are resolved to
 			// retrigger the validation.
-			CompletableFuture<Void> allFutures = CompletableFuture.allOf(resolvingJavaTypeContext
-					.toArray(new CompletableFuture[resolvingJavaTypeContext.size()]));
+			CompletableFuture<Void> allFutures = CompletableFuture
+					.allOf(resolvingJavaTypeContext.toArray(new CompletableFuture[resolvingJavaTypeContext.size()]));
 			allFutures.thenAccept(Void -> {
 				triggerValidationFor(document, false);
 			});
@@ -346,15 +336,14 @@ public class TemplateFileTextDocumentService extends AbstractTextDocumentService
 	}
 
 	/**
-	 * Parses the given Qute template file then passes the model to
-	 * the given function, then returns the result of the given function.
+	 * Parses the given Qute template file then passes the model to the given
+	 * function, then returns the result of the given function.
 	 *
 	 * @param <R>                The type of the result computed by the bifunction
 	 * @param documentIdentifier the document identifier.
 	 * @param code               a bifunction that accepts the parsed
-	 *                           {@link Template} and
-	 *                           a {@link CancelChecker} and returns the value to be
-	 *                           computed
+	 *                           {@link Template} and a {@link CancelChecker} and
+	 *                           returns the value to be computed
 	 * @see {@link TemplateFileTextDocumentService#getTemplateCompose}
 	 * @return the properties model for a given uri in a future and then apply the
 	 *         given function.
@@ -365,8 +354,8 @@ public class TemplateFileTextDocumentService extends AbstractTextDocumentService
 	}
 
 	/**
-	 * Parses the given Qute template file then passes the model to
-	 * the given function, then returns the result of the given function.
+	 * Parses the given Qute template file then passes the model to the given
+	 * function, then returns the result of the given function.
 	 *
 	 * Version of {@link TemplateFileTextDocumentService#getTemplate} that returns a
 	 * future of the value instead of the value itself
@@ -374,9 +363,8 @@ public class TemplateFileTextDocumentService extends AbstractTextDocumentService
 	 * @param <R>                The type of the result computed by the bifunction
 	 * @param documentIdentifier the document identifier
 	 * @param code               a bifunction that accepts the parsed
-	 *                           {@link Template} and
-	 *                           a {@link CancelChecker} and returns the value to be
-	 *                           computed as a future
+	 *                           {@link Template} and a {@link CancelChecker} and
+	 *                           returns the value to be computed as a future
 	 * @see {@link TemplateFileTextDocumentService#getTemplate}
 	 * @return the result of the passed bifunction as a future
 	 */

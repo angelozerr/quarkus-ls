@@ -23,6 +23,7 @@ import org.eclipse.lsp4j.CodeAction;
 import org.eclipse.lsp4j.CodeActionContext;
 import org.eclipse.lsp4j.Diagnostic;
 import org.eclipse.lsp4j.Range;
+import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 
 import com.redhat.qute.ls.api.QuteTemplateGenerateMissingJavaMember;
 import com.redhat.qute.ls.commons.client.ConfigurationItemEditType;
@@ -75,7 +76,8 @@ class QuteCodeActions {
 	}
 
 	public CompletableFuture<List<CodeAction>> doCodeActions(Template template, CodeActionContext context, Range range,
-			QuteTemplateGenerateMissingJavaMember resolver, SharedSettings sharedSettings) {
+			QuteTemplateGenerateMissingJavaMember resolver, SharedSettings sharedSettings,
+			CancelChecker cancelChecker) {
 		List<CodeAction> codeActions = new ArrayList<>();
 		List<Diagnostic> diagnostics = context.getDiagnostics();
 		if (diagnostics == null || diagnostics.isEmpty()) {
@@ -95,18 +97,22 @@ class QuteCodeActions {
 					// will provide a quickfix like:
 					//
 					// Declare `undefinedObject` with parameter declaration."
-					codeActionForUndefinedObject.doCodeActions(request, codeActionResolveFutures, codeActions);
+					codeActionForUndefinedObject.doCodeActions(request, codeActionResolveFutures, codeActions,
+							cancelChecker);
 					break;
 				case UndefinedNamespace:
 					// The following Qute template:
 					// {undefinedNamespace:xyz}
-					codeActionForUndefinedNamespace.doCodeActions(request, codeActionResolveFutures, codeActions);
+					codeActionForUndefinedNamespace.doCodeActions(request, codeActionResolveFutures, codeActions,
+							cancelChecker);
 					break;
 				case UnknownProperty:
-					codeActionForUnknownProperty.doCodeActions(request, codeActionResolveFutures, codeActions);
+					codeActionForUnknownProperty.doCodeActions(request, codeActionResolveFutures, codeActions,
+							cancelChecker);
 					break;
 				case UnknownMethod:
-					codeActionForUnknownMethod.doCodeActions(request, codeActionResolveFutures, codeActions);
+					codeActionForUnknownMethod.doCodeActions(request, codeActionResolveFutures, codeActions,
+							cancelChecker);
 					break;
 				case UndefinedSectionTag:
 					// The following Qute template:
@@ -115,7 +121,8 @@ class QuteCodeActions {
 					// will provide a quickfix like:
 					//
 					// Create `undefinedTag`"
-					codeActionForUndefinedSectionTag.doCodeActions(request, codeActionResolveFutures, codeActions);
+					codeActionForUndefinedSectionTag.doCodeActions(request, codeActionResolveFutures, codeActions,
+							cancelChecker);
 					break;
 				default:
 					break;

@@ -94,11 +94,13 @@ public class QuteLanguageService implements SnippetRegistryProvider<Snippet> {
 	 * @param context        the Code Action context.
 	 * @param resolver       the generate missing java member resolver
 	 * @param sharedSettings the Qute shared settings.
+	 * @param cancelChecker  the cancel checker.
 	 * @return the CodeAction(s) to be added to the Qute template.
 	 */
 	public CompletableFuture<List<CodeAction>> doCodeActions(Template template, CodeActionContext context,
-			QuteTemplateGenerateMissingJavaMember resolver, Range range, SharedSettings sharedSettings) {
-		return codeActions.doCodeActions(template, context, range, resolver, sharedSettings);
+			QuteTemplateGenerateMissingJavaMember resolver, Range range, SharedSettings sharedSettings,
+			CancelChecker cancelChecker) {
+		return codeActions.doCodeActions(template, context, range, resolver, sharedSettings, cancelChecker);
 	}
 
 	/**
@@ -106,6 +108,7 @@ public class QuteLanguageService implements SnippetRegistryProvider<Snippet> {
 	 *
 	 * @param template       the Qute template.
 	 * @param sharedSettings the Qute shared settings.
+	 * @param cancelChecker  the cancel checker.
 	 * @return the CodeLens' to be added to the Qute template.
 	 */
 	public CompletableFuture<List<? extends CodeLens>> getCodeLens(Template template, SharedSettings settings,

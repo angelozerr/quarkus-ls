@@ -26,6 +26,7 @@ import java.util.stream.Collectors;
 import org.eclipse.lsp4j.CodeAction;
 import org.eclipse.lsp4j.Diagnostic;
 import org.eclipse.lsp4j.Position;
+import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 
 import com.redhat.qute.ls.commons.BadLocationException;
 import com.redhat.qute.ls.commons.CodeActionFactory;
@@ -68,12 +69,13 @@ public class QuteCodeActionForUndefinedObject extends AbstractQuteCodeAction {
 
 	@Override
 	public void doCodeActions(CodeActionRequest request, List<CompletableFuture<Void>> codeActionResolveFutures,
-			List<CodeAction> codeActions) {
+			List<CodeAction> codeActions, CancelChecker cancelChecker) {
 		try {
 			Node node = request.getCoveredNode();
 			if (node == null) {
 				return;
 			}
+			cancelChecker.checkCanceled();
 			ObjectPart part = (ObjectPart) node;
 			Template template = request.getTemplate();
 			Diagnostic diagnostic = request.getDiagnostic();

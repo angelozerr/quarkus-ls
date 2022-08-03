@@ -18,6 +18,7 @@ import java.util.logging.Logger;
 
 import org.eclipse.lsp4j.CodeAction;
 import org.eclipse.lsp4j.Diagnostic;
+import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 
 import com.redhat.qute.commons.ResolvedJavaTypeInfo;
 import com.redhat.qute.ls.commons.BadLocationException;
@@ -43,23 +44,23 @@ public class QuteCodeActionForUnknownMethod extends AbstractQuteCodeAction {
 
 	@Override
 	public void doCodeActions(CodeActionRequest request, List<CompletableFuture<Void>> codeActionResolveFutures,
-			List<CodeAction> codeActions) {
+			List<CodeAction> codeActions, CancelChecker cancelChecker) {
 		try {
 			Node node = request.getCoveredNode();
 			if (node == null) {
 				return;
 			}
-			
+			cancelChecker.checkCanceled();
+
 			ResolvedJavaTypeInfo baseResolvedType = request.getJavaTypeOfCoveredNode(javaCache);
 			if (baseResolvedType == null) {
 				return;
 			}
-			
+
 			MethodPart part = (MethodPart) node;
 			Template template = request.getTemplate();
 			Diagnostic diagnostic = request.getDiagnostic();
 
-			
 			// TODO : implement code actions
 
 		} catch (BadLocationException e) {

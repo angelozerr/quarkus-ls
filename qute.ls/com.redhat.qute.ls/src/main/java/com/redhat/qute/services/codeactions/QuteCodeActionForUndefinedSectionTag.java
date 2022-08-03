@@ -19,6 +19,7 @@ import java.util.logging.Logger;
 
 import org.eclipse.lsp4j.CodeAction;
 import org.eclipse.lsp4j.Diagnostic;
+import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 
 import com.redhat.qute.ls.commons.BadLocationException;
 import com.redhat.qute.ls.commons.CodeActionFactory;
@@ -48,7 +49,7 @@ public class QuteCodeActionForUndefinedSectionTag extends AbstractQuteCodeAction
 
 	@Override
 	public void doCodeActions(CodeActionRequest request, List<CompletableFuture<Void>> codeActionResolveFutures,
-			List<CodeAction> codeActions) {
+			List<CodeAction> codeActions, CancelChecker cancelChecker) {
 		try {
 			Template template = request.getTemplate();
 			Diagnostic diagnostic = request.getDiagnostic();
@@ -58,6 +59,7 @@ public class QuteCodeActionForUndefinedSectionTag extends AbstractQuteCodeAction
 			}
 			String tagName = null;
 			Node node = request.getCoveredNode();
+			cancelChecker.checkCanceled();
 			if (node.getKind() == NodeKind.Section) {
 				Section section = (Section) node;
 				tagName = section.getTag();
