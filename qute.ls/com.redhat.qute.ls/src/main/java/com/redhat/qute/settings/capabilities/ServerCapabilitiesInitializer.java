@@ -56,6 +56,7 @@ public class ServerCapabilitiesInitializer {
 		serverCapabilities.setReferencesProvider(!clientCapabilities.isReferencesDynamicRegistrationSupported());
 		serverCapabilities.setLinkedEditingRangeProvider(!clientCapabilities.isLinkedEditingRangeDynamicRegistered());
 		serverCapabilities.setInlayHintProvider(!clientCapabilities.isInlayHintDynamicRegistered());
+		serverCapabilities.setInlineValueProvider(!clientCapabilities.isInlineValueDynamicRegistered());
 		serverCapabilities.setRenameProvider(!clientCapabilities.isRenameDynamicRegistered());
 		return serverCapabilities;
 	}

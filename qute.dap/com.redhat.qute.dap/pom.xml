@@ -1,36 +1,8 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.redhat.microprofile</groupId>
-	<artifactId>com.redhat.qute.ls</artifactId>
-	<version>0.13.0-SNAPSHOT</version>
-
-	<name>Qute Language Server</name>
-	<description>Qute Language Server</description>
-	<url>https://github.com/redhat-developer/quarkus-ls</url>
-	<licenses>
-		<license>
-			<name>EPL-2.0</name>
-			<url>https://www.eclipse.org/legal/epl-2.0/</url>
-			<comments>Eclipse Public License 2.0</comments>
-		</license>
-	</licenses>
-	<scm>
-		<connection>scm:git:git@github.com:redhat-developer/quarkus-ls.git</connection>
-		<developerConnection>scm:git:git@github.com:redhat-developer/quarkus-ls.git</developerConnection>
-		<url>https://github.com/redhat-developer/quarkus-ls</url>
-		<tag>${project.version}</tag>
-	</scm>
-
-	<developers>
-		<developer>
-			<id>team</id>
-			<name>Red Hat Developer</name>
-			<organization>Red Hat</organization>
-			<organizationUrl>https://www.redhat.com</organizationUrl>
-		</developer>
-	</developers>
+	<artifactId>com.redhat.qute.dap</artifactId>
+	<version>0.12.0-SNAPSHOT</version>
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -88,7 +60,7 @@
 					<finalName>${project.artifactId}</finalName>
 					<archive>
 						<manifest>
-							<mainClass>com.redhat.qute.ls.QuteServerLauncher</mainClass>
+							<mainClass>com.redhat.qute.dap.QuteDebugAdapterLauncher</mainClass>
 						</manifest>
 					</archive>
 				</configuration>
@@ -129,22 +101,19 @@
 				<version>3.0.0-M4</version>
 				<configuration>
 					<runOrder>random</runOrder>
-					<statelessTestsetReporter
-						implementation="org.apache.maven.plugin.surefire.extensions.junit5.JUnit5Xml30StatelessReporter">
+					<statelessTestsetReporter implementation="org.apache.maven.plugin.surefire.extensions.junit5.JUnit5Xml30StatelessReporter">
 						<disable>false</disable>
 						<usePhrasedFileName>false</usePhrasedFileName>
 						<usePhrasedTestSuiteClassName>false</usePhrasedTestSuiteClassName>
 						<usePhrasedTestCaseClassName>false</usePhrasedTestCaseClassName>
 						<usePhrasedTestCaseMethodName>true</usePhrasedTestCaseMethodName>
 					</statelessTestsetReporter>
-					<consoleOutputReporter
-						implementation="org.apache.maven.plugin.surefire.extensions.junit5.JUnit5ConsoleOutputReporter">
+					<consoleOutputReporter implementation="org.apache.maven.plugin.surefire.extensions.junit5.JUnit5ConsoleOutputReporter">
 						<disable>false</disable>
 						<encoding>UTF-8</encoding>
 						<usePhrasedFileName>false</usePhrasedFileName>
 					</consoleOutputReporter>
-					<statelessTestsetInfoReporter
-						implementation="org.apache.maven.plugin.surefire.extensions.junit5.JUnit5StatelessTestsetInfoReporter">
+					<statelessTestsetInfoReporter implementation="org.apache.maven.plugin.surefire.extensions.junit5.JUnit5StatelessTestsetInfoReporter">
 						<disable>false</disable>
 						<usePhrasedFileName>false</usePhrasedFileName>
 						<usePhrasedClassNameInRunning>true</usePhrasedClassNameInRunning>
@@ -158,64 +127,25 @@
 	<dependencies>
 		<dependency>
 			<groupId>org.eclipse.lsp4j</groupId>
-			<artifactId>org.eclipse.lsp4j</artifactId>
-			<version>${lsp4j.version}</version>
-			<exclusions>
-				<exclusion>
-					<groupId>com.google.errorprone</groupId>
-					<artifactId>error_prone_annotations</artifactId>
-				</exclusion>
-				<exclusion>
-					<groupId>org.codehaus.mojo</groupId>
-					<artifactId>animal-sniffer-annotations</artifactId>
-				</exclusion>
-			</exclusions>
-		</dependency>
-		<dependency>
-			<groupId>org.eclipse.lsp4j</groupId>
-			<artifactId>org.eclipse.lsp4j.jsonrpc</artifactId>
-			<version>${lsp4j.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.eclipse.lsp4j</groupId>
 			<artifactId>org.eclipse.lsp4j.debug</artifactId>
-			<version>${lsp4j.version}</version>
+			<version>0.14.0</version>
 		</dependency>
+
 		<dependency>
 			<groupId>io.quarkus.qute</groupId>
-			<artifactId>qute-core</artifactId>
-			<version>${qute.version}</version>
+			<artifactId>qute-parent</artifactId>
+			<version>999-SNAPSHOT</version>
+			<scope>system</scope>
+			<systemPath>${basedir}/lib/qute-core-999-SNAPSHOT.jar</systemPath>
 		</dependency>
-		<dependency>
-			<groupId>org.junit.jupiter</groupId>
-			<artifactId>junit-jupiter-api</artifactId>
-			<version>${junit.version}</version>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.junit.jupiter</groupId>
-			<artifactId>junit-jupiter-engine</artifactId>
-			<version>${junit.version}</version>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.junit.jupiter</groupId>
-			<artifactId>junit-jupiter-params</artifactId>
-			<version>${junit.version}</version>
-			<scope>test</scope>
-		</dependency>
-	</dependencies>
 
-	<distributionManagement>
-		<repository>
-			<id>${jboss.releases.repo.id}</id>
-			<name>JBoss Releases Repository</name>
-			<url>${jboss.releases.repo.url}</url>
-		</repository>
-		<snapshotRepository>
-			<id>${jboss.snapshots.repo.id}</id>
-			<name>JBoss Snapshots Repository</name>
-			<url>${jboss.snapshots.repo.url}</url>
-		</snapshotRepository>
-	</distributionManagement>
+		<dependency>
+			<groupId>io.quarkus.qute</groupId>
+			<artifactId>qute-parent</artifactId>
+			<version>999-SNAPSHOT</version>
+			<scope>system</scope>
+			<systemPath>${basedir}/lib/qute-debug-999-SNAPSHOT.jar</systemPath>
+		</dependency>
+
+	</dependencies>
 </project>

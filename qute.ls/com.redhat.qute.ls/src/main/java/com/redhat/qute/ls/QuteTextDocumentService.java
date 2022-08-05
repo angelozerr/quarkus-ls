@@ -41,6 +41,8 @@ import org.eclipse.lsp4j.Hover;
 import org.eclipse.lsp4j.HoverParams;
 import org.eclipse.lsp4j.InlayHint;
 import org.eclipse.lsp4j.InlayHintParams;
+import org.eclipse.lsp4j.InlineValue;
+import org.eclipse.lsp4j.InlineValueParams;
 import org.eclipse.lsp4j.LinkedEditingRangeParams;
 import org.eclipse.lsp4j.LinkedEditingRanges;
 import org.eclipse.lsp4j.Location;
@@ -251,6 +253,15 @@ public class QuteTextDocumentService implements TextDocumentService {
 		AbstractTextDocumentService service = getTextDocumentService(params.getTextDocument());
 		if (service != null) {
 			return service.inlayHint(params);
+		}
+		return CompletableFuture.completedFuture(null);
+	}
+
+	@Override
+	public CompletableFuture<List<InlineValue>> inlineValue(InlineValueParams params) {
+		AbstractTextDocumentService service = getTextDocumentService(params.getTextDocument());
+		if (service != null) {
+			return service.inlineValue(params);
 		}
 		return CompletableFuture.completedFuture(null);
 	}
