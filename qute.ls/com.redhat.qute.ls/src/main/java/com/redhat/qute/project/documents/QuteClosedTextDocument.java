@@ -22,6 +22,7 @@ import java.util.stream.Collectors;
 import com.redhat.qute.commons.ProjectInfo;
 import com.redhat.qute.ls.commons.TextDocument;
 import com.redhat.qute.parser.template.Parameter;
+import com.redhat.qute.parser.template.Section;
 import com.redhat.qute.parser.template.Template;
 import com.redhat.qute.parser.template.TemplateParser;
 import com.redhat.qute.project.QuteProject;
@@ -110,6 +111,7 @@ public class QuteClosedTextDocument implements QuteTextDocument {
 		}
 		SearchInfoQuery query = new SearchInfoQuery();
 		query.setInsertParameter(SearchInfoQuery.ALL);
+		query.setSectionTag(SearchInfoQuery.ALL);
 		TemplateInfoCollector collector = new TemplateInfoCollector(query);
 		getTemplate().accept(collector);
 		return collector;
@@ -126,6 +128,20 @@ public class QuteClosedTextDocument implements QuteTextDocument {
 		}
 		return parameters.stream()
 				.filter(p -> insertParameter.equals(p.getValue()))
+				.collect(Collectors.toList());
+	}
+
+	@Override
+	public List<Section> findSectionsByTag(String tag) {
+		List<Section> sections = getCollector().getSectionsByTag();
+		if (sections == null) {
+			return Collections.emptyList();
+		}
+		if (SearchInfoQuery.ALL.equals(tag)) {
+			return sections;
+		}
+		return sections.stream()
+				.filter(s -> tag.equals(s.getTag()))
 				.collect(Collectors.toList());
 	}
 
