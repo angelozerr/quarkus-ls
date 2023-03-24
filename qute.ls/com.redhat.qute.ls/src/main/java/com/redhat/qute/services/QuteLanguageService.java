@@ -133,6 +133,10 @@ public class QuteLanguageService implements SnippetRegistryProvider<Snippet> {
 				cancelChecker);
 	}
 
+	public String doCompletaTag(Template template, Position position, CancelChecker cancelChecker) {
+		return completions.doTagComplete(template, position, cancelChecker);
+	}
+
 	/**
 	 * Resolve definition in the given Qute <code>template</code>.
 	 *

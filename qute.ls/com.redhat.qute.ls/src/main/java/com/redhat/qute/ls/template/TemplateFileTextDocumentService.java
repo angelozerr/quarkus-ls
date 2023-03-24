@@ -61,6 +61,8 @@ import com.redhat.qute.ls.AbstractTextDocumentService;
 import com.redhat.qute.ls.QuteLanguageServer;
 import com.redhat.qute.ls.api.QuteLanguageClientAPI;
 import com.redhat.qute.ls.api.QuteTemplateProvider;
+import com.redhat.qute.ls.api.autoinsert.AutoInsertKind;
+import com.redhat.qute.ls.api.autoinsert.AutoInsertParams;
 import com.redhat.qute.ls.commons.ModelTextDocument;
 import com.redhat.qute.ls.commons.ValidatorDelayer;
 import com.redhat.qute.parser.template.Template;
@@ -310,6 +312,12 @@ public class TemplateFileTextDocumentService extends AbstractTextDocumentService
 	@Override
 	public CompletableFuture<CodeAction> resolveCodeAction(CodeAction codeAction) {
 		return getQuteLanguageService().resolveCodeAction(codeAction, getLanguageClient());
+	}
+
+	public CompletableFuture<String> autoInsert(AutoInsertParams params) {
+		return getTemplate(params.getTextDocument(), (template, cancelChecker) -> {
+			return getQuteLanguageService().doCompletaTag(template, params.getPosition(), cancelChecker);
+		});
 	}
 
 	private QuteLanguageService getQuteLanguageService() {

@@ -64,6 +64,7 @@ import com.redhat.qute.ls.api.QuteResolvedJavaTypeProvider;
 import com.redhat.qute.ls.api.QuteTemplateJavaTextEditProvider;
 import com.redhat.qute.ls.api.QuteTemplateProvider;
 import com.redhat.qute.ls.api.QuteUserTagProvider;
+import com.redhat.qute.ls.api.autoinsert.AutoInsertParams;
 import com.redhat.qute.ls.commons.ParentProcessWatcher.ProcessLanguageServer;
 import com.redhat.qute.ls.commons.client.ExtendedClientCapabilities;
 import com.redhat.qute.ls.commons.client.InitializationOptionsExtendedClientCapabilities;
@@ -363,4 +364,8 @@ public class QuteLanguageServer implements LanguageServer, ProcessLanguageServer
 		getLanguageClient().notifyProgress(params);
 	}
 
+	@Override
+	public CompletableFuture<String> autoInsert(AutoInsertParams params) {
+		return textDocumentService.autoInsert(params);
+	}
 }

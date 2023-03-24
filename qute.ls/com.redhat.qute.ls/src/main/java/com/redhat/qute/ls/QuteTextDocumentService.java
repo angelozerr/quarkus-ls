@@ -58,6 +58,7 @@ import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.lsp4j.services.TextDocumentService;
 
 import com.redhat.qute.commons.datamodel.JavaDataModelChangeEvent;
+import com.redhat.qute.ls.api.autoinsert.AutoInsertParams;
 import com.redhat.qute.ls.commons.client.ExtendedClientCapabilities;
 import com.redhat.qute.ls.java.JavaFileTextDocumentService;
 import com.redhat.qute.ls.template.TemplateFileTextDocumentService;
@@ -282,6 +283,10 @@ public class QuteTextDocumentService implements TextDocumentService, TemplateVal
 		return CompletableFuture.completedFuture(null);
 	}
 
+	public CompletableFuture<String> autoInsert(AutoInsertParams params) {
+		return templateFileTextDocumentService.autoInsert(params);
+	}
+
 	public AbstractTextDocumentService getTextDocumentService(TextDocumentIdentifier document) {
 		return getTextDocumentService(document.getUri());
 	}
@@ -337,4 +342,5 @@ public class QuteTextDocumentService implements TextDocumentService, TemplateVal
 		templateFileTextDocumentService.dispose();
 		javaFileTextDocumentService.dispose();
 	}
+
 }

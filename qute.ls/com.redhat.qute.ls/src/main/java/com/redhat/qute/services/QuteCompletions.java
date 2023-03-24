@@ -28,6 +28,7 @@ import com.redhat.qute.ls.commons.snippets.Snippet;
 import com.redhat.qute.ls.commons.snippets.SnippetRegistryProvider;
 import com.redhat.qute.parser.expression.Part;
 import com.redhat.qute.parser.expression.Parts;
+import com.redhat.qute.parser.scanner.Scanner;
 import com.redhat.qute.parser.template.Expression;
 import com.redhat.qute.parser.template.Node;
 import com.redhat.qute.parser.template.NodeKind;
@@ -35,6 +36,9 @@ import com.redhat.qute.parser.template.Parameter;
 import com.redhat.qute.parser.template.ParameterDeclaration;
 import com.redhat.qute.parser.template.Section;
 import com.redhat.qute.parser.template.Template;
+import com.redhat.qute.parser.template.scanner.ScannerState;
+import com.redhat.qute.parser.template.scanner.TemplateScanner;
+import com.redhat.qute.parser.template.scanner.TokenType;
 import com.redhat.qute.project.QuteProject;
 import com.redhat.qute.project.datamodel.JavaDataModelCache;
 import com.redhat.qute.services.completions.CompletionRequest;
@@ -124,7 +128,7 @@ public class QuteCompletions {
 			if (expression != null && Section.isIncludeSection(expression.getOwnerSection())) {
 				// {#include | }
 				return completionForTemplateIds.doCompleteTemplateId(completionRequest,
-						completionSettings, formattingSettings, cancelChecker); 
+						completionSettings, formattingSettings, cancelChecker);
 			}
 			return completionForExpression.doCompleteExpression(completionRequest, expression, nodeExpression, template,
 					offset, completionSettings, formattingSettings, nativeImagesSettings, cancelChecker);
@@ -223,4 +227,66 @@ public class QuteCompletions {
 		return CompletableFuture.completedFuture(list);
 	}
 
+	public String doTagComplete(Template template, Position position, CancelChecker cancelChecker) {
+		int offset = -1;
+		try {
+			offset = template.offsetAt(position);
+		} catch (BadLocationException e) {
+			LOGGER.log(Level.SEVERE, "Creation of doTagComplete failed", e);
+			return null;
+		}
+		if (offset <= 0) {
+			return null;
+		}
+		char c = template.getText().charAt(offset - 1);
+		if (c == '}') {
+			Node node = template.findNodeBefore(offset);
+			if (node == null || node.getKind() != NodeKind.Section) {
+				return null;
+			}
+			Section section = (Section) node;
+			if (section.hasTag() && section.getStart() < offset
+					&& (!section.isEndTagClosed() || section.getEndTagCloseOffset() > offset)) {
+				Scanner<TokenType, ScannerState> scanner = TemplateScanner.createScanner(template.getText(),
+						node.getStart());
+				TokenType token = scanner.scan();
+				while (token != TokenType.EOS && scanner.getTokenEnd() <= offset) {
+					cancelChecker.checkCanceled();
+					if (token == TokenType.StartTagClose && scanner.getTokenEnd() == offset) {
+						StringBuilder closedTag = new StringBuilder("$0");
+						closedTag.append("{/");
+						closedTag.append(section.getTag());
+						closedTag.append("}");
+						return closedTag.toString();
+					}
+					token = scanner.scan();
+				}
+			}
+		} else if (c == '/') {
+			Node node = template.findNodeBefore(offset);
+			if (node == null || node.getKind() != NodeKind.Section) {
+				return null;
+			}
+			Section section = (Section) node;
+			while (section != null && section.isClosed()
+					&& !(section.hasEndTag() && (section.getEndTagOpenOffset() > offset))) {
+				section = section.getParentSection();
+			}
+			if (section != null && section.hasTag()) {
+				Scanner<TokenType, ScannerState> scanner = TemplateScanner.createScanner(template.getText(),
+						node.getStart());
+				TokenType token = scanner.scan();
+				while (token != TokenType.EOS && scanner.getTokenEnd() <= offset) {
+					if (token == TokenType.EndTagOpen && scanner.getTokenEnd() == offset) {
+						StringBuilder closedTag = new StringBuilder("$");
+						closedTag.append(section.getTag());
+						closedTag.append("}");
+						return closedTag.toString();
+					}
+					token = scanner.scan();
+				}
+			}
+		}
+		return null;
+	}
 }

@@ -11,10 +11,14 @@
 *******************************************************************************/
 package com.redhat.qute.ls.api;
 
+import java.util.concurrent.CompletableFuture;
+
 import org.eclipse.lsp4j.jsonrpc.services.JsonNotification;
+import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
 import org.eclipse.lsp4j.services.LanguageServer;
 
 import com.redhat.qute.commons.datamodel.JavaDataModelChangeEvent;
+import com.redhat.qute.ls.api.autoinsert.AutoInsertParams;
 
 /**
  * Qute language server API.
@@ -37,4 +41,7 @@ public interface QuteLanguageServerAPI extends LanguageServer {
 	 */
 	@JsonNotification("qute/dataModelChanged")
 	void dataModelChanged(JavaDataModelChangeEvent event);
+
+	@JsonRequest("qute/autoInsert")
+	CompletableFuture<String> autoInsert(AutoInsertParams params);
 }
