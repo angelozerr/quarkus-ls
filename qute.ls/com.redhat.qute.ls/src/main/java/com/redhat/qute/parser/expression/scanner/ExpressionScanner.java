@@ -14,7 +14,7 @@ package com.redhat.qute.parser.expression.scanner;
 import static com.redhat.qute.parser.template.scanner.TemplateScanner.QUOTE;
 import static com.redhat.qute.parser.template.scanner.TemplateScanner.QUOTE_C;
 
-import com.redhat.qute.parser.scanner.AbstractScanner;
+import com.redhat.lsp.parser.scanner.AbstractScanner;
 
 public class ExpressionScanner extends AbstractScanner<TokenType, ScannerState> {
 

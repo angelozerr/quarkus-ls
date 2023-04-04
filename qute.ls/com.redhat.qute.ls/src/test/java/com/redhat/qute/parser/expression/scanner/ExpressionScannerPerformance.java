@@ -11,7 +11,7 @@
 *******************************************************************************/
 package com.redhat.qute.parser.expression.scanner;
 
-import com.redhat.qute.parser.scanner.Scanner;
+import com.redhat.lsp.parser.scanner.Scanner;
 
 /**
  * This utility class is used to check the memory usage of {@link XMLScanner},

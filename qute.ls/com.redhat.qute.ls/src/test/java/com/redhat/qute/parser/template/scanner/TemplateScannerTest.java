@@ -15,7 +15,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
 
-import com.redhat.qute.parser.scanner.Scanner;
+import com.redhat.lsp.parser.scanner.Scanner;
 
 /**
  * Tests for template scanner {@link TemplateScanner}.

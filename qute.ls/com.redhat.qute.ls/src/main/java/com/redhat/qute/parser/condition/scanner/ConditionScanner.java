@@ -11,7 +11,7 @@
 *******************************************************************************/
 package com.redhat.qute.parser.condition.scanner;
 
-import com.redhat.qute.parser.scanner.AbstractScanner;
+import com.redhat.lsp.parser.scanner.AbstractScanner;
 
 /**
  * Condition scanner.

@@ -9,13 +9,13 @@
 * Contributors:
 *     Red Hat Inc. - initial API and implementation
 *******************************************************************************/
-package com.redhat.qute.parser.scanner;
+package com.redhat.lsp.parser.scanner;
 
-import static com.redhat.qute.parser.scanner.Constants._CAR;
-import static com.redhat.qute.parser.scanner.Constants._LFD;
-import static com.redhat.qute.parser.scanner.Constants._NWL;
-import static com.redhat.qute.parser.scanner.Constants._TAB;
-import static com.redhat.qute.parser.scanner.Constants._WSP;
+import static com.redhat.lsp.parser.scanner.Constants._CAR;
+import static com.redhat.lsp.parser.scanner.Constants._LFD;
+import static com.redhat.lsp.parser.scanner.Constants._NWL;
+import static com.redhat.lsp.parser.scanner.Constants._TAB;
+import static com.redhat.lsp.parser.scanner.Constants._WSP;
 
 import java.util.function.Predicate;
 

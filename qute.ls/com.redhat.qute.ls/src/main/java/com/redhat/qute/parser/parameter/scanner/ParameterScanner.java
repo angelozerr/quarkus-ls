@@ -13,7 +13,7 @@ package com.redhat.qute.parser.parameter.scanner;
 
 import java.util.function.Predicate;
 
-import com.redhat.qute.parser.scanner.AbstractScanner;
+import com.redhat.lsp.parser.scanner.AbstractScanner;
 
 /**
  * Parameter scanner.

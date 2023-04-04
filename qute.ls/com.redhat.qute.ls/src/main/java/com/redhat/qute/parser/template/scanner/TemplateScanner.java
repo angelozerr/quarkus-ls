@@ -13,8 +13,8 @@ package com.redhat.qute.parser.template.scanner;
 
 import java.util.function.Predicate;
 
-import com.redhat.qute.parser.scanner.AbstractScanner;
-import com.redhat.qute.parser.scanner.Scanner;
+import com.redhat.lsp.parser.scanner.AbstractScanner;
+import com.redhat.lsp.parser.scanner.Scanner;
 
 /**
  * Qute Template scanner.

@@ -9,7 +9,7 @@
 * Contributors:
 *     Red Hat Inc. - initial API and implementation
 *******************************************************************************/
-package com.redhat.qute.parser.scanner;
+package com.redhat.lsp.parser.scanner;
 
 public class Constants {
 

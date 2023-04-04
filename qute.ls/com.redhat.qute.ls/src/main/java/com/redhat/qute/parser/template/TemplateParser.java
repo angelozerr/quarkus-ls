@@ -13,9 +13,9 @@ package com.redhat.qute.parser.template;
 
 import java.util.Objects;
 
+import com.redhat.lsp.parser.scanner.Scanner;
 import com.redhat.qute.ls.commons.TextDocument;
 import com.redhat.qute.parser.CancelChecker;
-import com.redhat.qute.parser.scanner.Scanner;
 import com.redhat.qute.parser.template.scanner.ScannerState;
 import com.redhat.qute.parser.template.scanner.TemplateScanner;
 import com.redhat.qute.parser.template.scanner.TokenType;
