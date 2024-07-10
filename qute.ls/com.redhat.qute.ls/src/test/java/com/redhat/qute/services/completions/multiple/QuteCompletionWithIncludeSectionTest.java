@@ -18,6 +18,7 @@ import org.eclipse.lsp4j.CompletionItem;
 import org.junit.jupiter.api.Test;
 
 import com.redhat.qute.QuteAssert;
+import com.redhat.qute.commons.TemplatePath;
 import com.redhat.qute.project.multiple.QuteProjectB;
 
 /**
@@ -71,7 +72,7 @@ public class QuteCompletionWithIncludeSectionTest {
 	private static void testCompletionFor(String value, String fileUri, boolean snippetSupport,
 			String projectUri, Integer expectedCount, CompletionItem... expectedItems)
 			throws Exception {
-		QuteAssert.testCompletionFor(value, snippetSupport, fileUri, null, projectUri, "", expectedCount,
+		QuteAssert.testCompletionFor(value, snippetSupport, fileUri, null, projectUri, new TemplatePath(""), expectedCount,
 				expectedItems);
 	}
 

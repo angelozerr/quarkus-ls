@@ -27,6 +27,7 @@ import com.redhat.qute.commons.JavaTypeInfo;
 import com.redhat.qute.commons.JavaTypeKind;
 import com.redhat.qute.commons.ProjectInfo;
 import com.redhat.qute.commons.ResolvedJavaTypeInfo;
+import com.redhat.qute.commons.TemplatePath;
 import com.redhat.qute.commons.datamodel.DataModelParameter;
 import com.redhat.qute.commons.datamodel.DataModelProject;
 import com.redhat.qute.commons.datamodel.DataModelTemplate;
@@ -191,5 +192,9 @@ public abstract class MockQuteProject extends QuteProject {
 
 	protected static String getProjectPath(String projectUri) {
 		return "src/test/resources/projects/" + projectUri;
+	}
+	
+	protected static List<TemplatePath> createTemplatePaths(String templatesBaseDir) {
+		return List.of(new TemplatePath(templatesBaseDir));
 	}
 }

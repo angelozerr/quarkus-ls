@@ -30,11 +30,11 @@ public class QuteProjectB extends MockQuteProject {
 	public final static String PROJECT_URI = "project-b";
 
 	public QuteProjectB(QuteProjectRegistry projectRegistry) {
-		super(new ProjectInfo(PROJECT_URI, Collections.emptyList(), getProjectPath(PROJECT_URI) + "/src/main/resources/templates"),
+		super(new ProjectInfo(PROJECT_URI, Collections.emptyList(), createTemplatePaths(getProjectPath(PROJECT_URI) + "/src/main/resources/templates")),
 				projectRegistry);
 		// project-b dependends from project-a
 		super.getProjectDependencies().add(projectRegistry.getProject(
-				new ProjectInfo(QuteProjectA.PROJECT_URI, Collections.emptyList(), "")));
+				new ProjectInfo(QuteProjectA.PROJECT_URI, Collections.emptyList(), createTemplatePaths(""))));
 	}
 
 	@Override

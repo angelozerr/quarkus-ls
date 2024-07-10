@@ -23,24 +23,24 @@ public class ProjectInfo {
 
 	private String uri;
 
-	private String templateBaseDir;
+	private List<TemplatePath> templatePaths;
 
 	private List<String> projectDependencyUris;
 
 	public ProjectInfo() {
 	}
 
-	public ProjectInfo(String projectUri, List<String> projectDependencies, String templateBaseDir) {
+	public ProjectInfo(String projectUri, List<String> projectDependencies, List<TemplatePath> templatePaths) {
 		setUri(projectUri);
 		setProjectDependencyUris(projectDependencies);
-		setTemplateBaseDir(templateBaseDir);
+		setTemplatePaths(templatePaths);
 	}
 
 	/**
 	 * Returns the project Uri.
 	 * 
 	 * @return the project Uri.
-	 */
+	 */ 
 	public String getUri() {
 		return uri;
 	}
@@ -77,8 +77,8 @@ public class ProjectInfo {
 	 * 
 	 * @return the Qute templates base directory and null otherwise.
 	 */
-	public String getTemplateBaseDir() {
-		return templateBaseDir;
+	public List<TemplatePath> getTemplatePaths() {
+		return templatePaths;
 	}
 
 	/**
@@ -86,7 +86,8 @@ public class ProjectInfo {
 	 * 
 	 * @param templateBaseDir the Qute templates base directory.
 	 */
-	public void setTemplateBaseDir(String templateBaseDir) {
-		this.templateBaseDir = templateBaseDir;
+	public void setTemplatePaths(List<TemplatePath> templatePaths) {
+		this.templatePaths = templatePaths;
 	}
+	
 }

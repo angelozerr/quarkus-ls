@@ -17,6 +17,7 @@ import static com.redhat.qute.QuteAssert.testDocumentLinkFor;
 
 import org.junit.jupiter.api.Test;
 
+import com.redhat.qute.commons.TemplatePath;
 import com.redhat.qute.project.multiple.QuteProjectB;
 
 /**
@@ -34,7 +35,7 @@ public class QuteDocumentLinkTest {
 		String template = "{#include root }\r\n" +
 				"{/include}";
 		testDocumentLinkFor(template, "src/main/resources/index.html", //
-				QuteProjectB.PROJECT_URI, "",
+				QuteProjectB.PROJECT_URI, new TemplatePath(""),
 				dl(r(0, 10, 0, 14),
 						"src/test/resources/projects/project-a/src/main/resources/templates/root.html"));
 	}

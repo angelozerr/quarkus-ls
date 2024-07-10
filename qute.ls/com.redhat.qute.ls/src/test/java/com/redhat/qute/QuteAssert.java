@@ -73,6 +73,7 @@ import org.eclipse.lsp4j.jsonrpc.messages.Either;
 
 import com.redhat.qute.commons.GenerateMissingJavaMemberParams;
 import com.redhat.qute.commons.ProjectInfo;
+import com.redhat.qute.commons.TemplatePath;
 import com.redhat.qute.ls.api.QuteTemplateJavaTextEditProvider;
 import com.redhat.qute.ls.commons.BadLocationException;
 import com.redhat.qute.ls.commons.TextDocument;
@@ -110,7 +111,7 @@ public class QuteAssert {
 
 	private static final String QUTE_SOURCE = "qute";
 
-	public static final String TEMPLATE_BASE_DIR = "src/test/resources/templates";
+	public static final TemplatePath TEMPLATE_BASE_DIR = new TemplatePath("src/test/resources/templates");
 
 	public static final String FILE_URI = "test.qute";
 
@@ -172,20 +173,20 @@ public class QuteAssert {
 	}
 
 	public static void testCompletionFor(String value, boolean snippetSupport, String fileUri, String projectUri,
-			String templateBaseDir, Integer expectedCount, CompletionItem... expectedItems) throws Exception {
+			TemplatePath templateBaseDir, Integer expectedCount, CompletionItem... expectedItems) throws Exception {
 		testCompletionFor(value, snippetSupport, fileUri, null, projectUri, templateBaseDir, expectedCount,
 				expectedItems);
 	}
 
 	public static void testCompletionFor(String value, boolean snippetSupport, String fileUri, String templateId,
-			String projectUri, String templateBaseDir, Integer expectedCount, CompletionItem... expectedItems)
+			String projectUri, TemplatePath templateBaseDir, Integer expectedCount, CompletionItem... expectedItems)
 			throws Exception {
 		testCompletionFor(value, snippetSupport, false, fileUri, templateId, projectUri, templateBaseDir, expectedCount,
 				new QuteNativeSettings(), expectedItems);
 	}
 
 	public static void testCompletionFor(String value, boolean snippetSupport, boolean itemDefaultsSupport,
-			String fileUri, String templateId, String projectUri, String templateBaseDir, Integer expectedCount,
+			String fileUri, String templateId, String projectUri, TemplatePath templateBaseDir, Integer expectedCount,
 			QuteNativeSettings nativeImagesSettings, CompletionItem... expectedItems) throws Exception {
 
 		// Add snippet support for completion
@@ -209,7 +210,7 @@ public class QuteAssert {
 	}
 
 	public static void testCompletionFor(String value, String fileUri, String templateId, String projectUri,
-			String templateBaseDir, Integer expectedCount, QuteNativeSettings nativeImagesSettings,
+			TemplatePath templateBaseDir, Integer expectedCount, QuteNativeSettings nativeImagesSettings,
 			QuteCompletionSettings completionSettings, boolean itemDefaultsSupport, CompletionItem... expectedItems) throws Exception {
 		int offset = value.indexOf('|');
 		value = value.substring(0, offset) + value.substring(offset + 1);
@@ -341,7 +342,7 @@ public class QuteAssert {
 	}
 
 	public static void testDiagnosticsFor(String value, String fileUri, String templateId, String projectUri,
-			String templateBaseDir, boolean filter, Diagnostic... expected) {
+			TemplatePath templateBaseDir, boolean filter, Diagnostic... expected) {
 		testDiagnosticsFor(value, fileUri, templateId, projectUri, templateBaseDir, filter, null, expected);
 	}
 
@@ -351,13 +352,13 @@ public class QuteAssert {
 	}
 
 	public static void testDiagnosticsFor(String value, String fileUri, String templateId, String projectUri,
-			String templateBaseDir, boolean filter, QuteValidationSettings validationSettings, Diagnostic... expected) {
+			TemplatePath templateBaseDir, boolean filter, QuteValidationSettings validationSettings, Diagnostic... expected) {
 		testDiagnosticsFor(value, fileUri, templateId, projectUri, templateBaseDir, filter, validationSettings,
 				new QuteNativeSettings(), expected);
 	}
 
 	public static void testDiagnosticsFor(String value, String fileUri, String templateId, String projectUri,
-			String templateBaseDir, boolean filter, QuteValidationSettings validationSettings,
+			TemplatePath templateBaseDir, boolean filter, QuteValidationSettings validationSettings,
 			QuteNativeSettings nativeImagesSettings, Diagnostic... expected) {
 		QuteProjectRegistry projectRegistry = new MockQuteProjectRegistry();
 		Template template = createTemplate(value, fileUri, projectUri, templateBaseDir, projectRegistry);
@@ -469,7 +470,7 @@ public class QuteAssert {
 	}
 
 	private static void assertHover(String value, String fileUri, String templateId, String projectUri,
-			String templateBaseDir, String expectedHoverLabel, Range expectedHoverRange, SharedSettings sharedSettings)
+			TemplatePath templateBaseDir, String expectedHoverLabel, Range expectedHoverRange, SharedSettings sharedSettings)
 			throws Exception {
 		int offset = value.indexOf("|");
 		value = value.substring(0, offset) + value.substring(offset + 1);
@@ -512,7 +513,7 @@ public class QuteAssert {
 		testDefinitionFor(value, fileURI, PROJECT_URI, TEMPLATE_BASE_DIR, expected);
 	}
 
-	public static void testDefinitionFor(String value, String fileUri, String projectUri, String templateBaseDir,
+	public static void testDefinitionFor(String value, String fileUri, String projectUri, TemplatePath templateBaseDir,
 			LocationLink... expected) throws Exception {
 		int offset = value.indexOf("|");
 		value = value.substring(0, offset) + value.substring(offset + 1);
@@ -549,7 +550,7 @@ public class QuteAssert {
 		testDocumentLinkFor(value, fileUri, PROJECT_URI, TEMPLATE_BASE_DIR, expected);
 	}
 
-	public static void testDocumentLinkFor(String value, String fileUri, String projectUri, String templateBaseDir,
+	public static void testDocumentLinkFor(String value, String fileUri, String projectUri, TemplatePath templateBaseDir,
 			DocumentLink... expected) throws Exception {
 
 		QuteProjectRegistry projectRegistry = new MockQuteProjectRegistry();
@@ -580,7 +581,7 @@ public class QuteAssert {
 		testHighlightsFor(value, FILE_URI, PROJECT_URI, TEMPLATE_BASE_DIR, expected);
 	}
 
-	public static void testHighlightsFor(String value, String fileUri, String projectUri, String templateBaseDir,
+	public static void testHighlightsFor(String value, String fileUri, String projectUri, TemplatePath templateBaseDir,
 			DocumentHighlight... expected) throws BadLocationException {
 		int offset = value.indexOf('|');
 		value = value.substring(0, offset) + value.substring(offset + 1);
@@ -621,7 +622,7 @@ public class QuteAssert {
 	}
 
 	private static void testCodeLensFor(String value, String fileUri, String templateId, String projectUri,
-			String templateBaseDir, CodeLens... expected) throws Exception {
+			TemplatePath templateBaseDir, CodeLens... expected) throws Exception {
 		QuteProjectRegistry projectRegistry = new MockQuteProjectRegistry();
 		Template template = createTemplate(value, fileUri, projectUri, templateBaseDir, projectRegistry);
 		template.setTemplateId(templateId);
@@ -663,7 +664,7 @@ public class QuteAssert {
 	}
 
 	private static void testInlayHintFor(String value, String fileUri, String templateId, String projectUri,
-			String templateBaseDir, QuteInlayHintSettings inlayHintSettings, InlayHint... expected) throws Exception {
+			TemplatePath templateBaseDir, QuteInlayHintSettings inlayHintSettings, InlayHint... expected) throws Exception {
 		QuteProjectRegistry projectRegistry = new MockQuteProjectRegistry();
 		Template template = createTemplate(value, fileUri, projectUri, templateBaseDir, projectRegistry);
 		template.setTemplateId(templateId);
@@ -726,7 +727,7 @@ public class QuteAssert {
 	}
 
 	private static void testCodeActionsFor(String value, Diagnostic diagnostic, String fileUri, String projectUri,
-			String templateBaseDir, SharedSettings settings, CodeAction... expected) throws Exception {
+			TemplatePath templateBaseDir, SharedSettings settings, CodeAction... expected) throws Exception {
 		int offset = value.indexOf('|');
 		Range range = null;
 
@@ -862,7 +863,7 @@ public class QuteAssert {
 		testReferencesFor(value, FILE_URI, PROJECT_URI, TEMPLATE_BASE_DIR, expected);
 	}
 
-	public static void testReferencesFor(String value, String fileUri, String projectUri, String templateBaseDir,
+	public static void testReferencesFor(String value, String fileUri, String projectUri, TemplatePath templateBaseDir,
 			Location... expected) throws BadLocationException {
 		int offset = value.indexOf('|');
 		value = value.substring(0, offset) + value.substring(offset + 1);
@@ -900,7 +901,7 @@ public class QuteAssert {
 	}
 
 	public static void assertRename(String value, String newText, String fileUri, String projectUri,
-			String templateBaseDir, List<TextEdit> expectedEdits) throws BadLocationException {
+			TemplatePath templateBaseDir, List<TextEdit> expectedEdits) throws BadLocationException {
 		int offset = value.indexOf('|');
 		value = value.substring(0, offset) + value.substring(offset + 1);
 
@@ -932,7 +933,7 @@ public class QuteAssert {
 		testLinkedEditingFor(value, FILE_URI, PROJECT_URI, TEMPLATE_BASE_DIR, expected);
 	}
 
-	public static void testLinkedEditingFor(String value, String fileUri, String projectUri, String templateBaseDir,
+	public static void testLinkedEditingFor(String value, String fileUri, String projectUri, TemplatePath templateBaseDir,
 			LinkedEditingRanges expected) throws BadLocationException {
 		int offset = value.indexOf('|');
 		value = value.substring(0, offset) + value.substring(offset + 1);
@@ -967,7 +968,7 @@ public class QuteAssert {
 		testDocumentSymbolsFor(value, FILE_URI, PROJECT_URI, TEMPLATE_BASE_DIR, expected);
 	}
 
-	public static void testDocumentSymbolsFor(String value, String fileUri, String projectUri, String templateBaseDir,
+	public static void testDocumentSymbolsFor(String value, String fileUri, String projectUri, TemplatePath templateBaseDir,
 			DocumentSymbol... expected) throws BadLocationException {
 
 		QuteProjectRegistry projectRegistry = new MockQuteProjectRegistry();
@@ -1045,11 +1046,11 @@ public class QuteAssert {
 		return new Position(line, character);
 	}
 
-	private static Template createTemplate(String value, String fileUri, String projectUri, String templateBaseDir,
+	private static Template createTemplate(String value, String fileUri, String projectUri, TemplatePath templateBaseDir,
 			QuteProjectRegistry projectRegistry) {
 		Template template = TemplateParser.parse(value, fileUri != null ? fileUri : FILE_URI);
 		template.setProjectUri(projectUri);
-		projectRegistry.getProject(new ProjectInfo(projectUri, Collections.emptyList(), templateBaseDir));
+		projectRegistry.getProject(new ProjectInfo(projectUri, Collections.emptyList(), List.of(templateBaseDir)));
 		template.setProjectRegistry(projectRegistry);
 		return template;
 	}

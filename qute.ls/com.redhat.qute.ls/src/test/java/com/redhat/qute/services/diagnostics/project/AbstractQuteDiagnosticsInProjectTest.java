@@ -30,6 +30,7 @@ import org.junit.jupiter.api.Test;
 
 import com.redhat.qute.commons.ProjectInfo;
 import com.redhat.qute.commons.QuteProjectParams;
+import com.redhat.qute.commons.TemplatePath;
 import com.redhat.qute.project.MockQuteLanguageServer;
 import com.redhat.qute.project.QuteQuickStartProject;
 import com.redhat.qute.services.diagnostics.QuteErrorCode;
@@ -69,7 +70,7 @@ public abstract class AbstractQuteDiagnosticsInProjectTest {
 		private ProjectInfo createQuickStartProject() {
 			ProjectInfo projectInfo = new ProjectInfo(QuteQuickStartProject.PROJECT_URI,
 					Collections.emptyList(),
-					FileUtils.toUri(templatesPath));
+					List.of(new TemplatePath(FileUtils.toUri(templatesPath))));
 			return projectInfo;
 		};
 
