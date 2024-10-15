@@ -28,7 +28,7 @@ import org.eclipse.lsp4mp.jdt.core.project.JDTMicroProfileProjectManager;
  * Quarkus JAX-RS CodeLens participant used to update the server port declared
  * with "quarkus.http.port" property.
  *
- * @author Angelo ZERR 
+ * @author Angelo ZERR
  *
  */
 public class QuarkusJaxRsCodeLensParticipant implements IJavaCodeLensParticipant {
@@ -37,6 +37,8 @@ public class QuarkusJaxRsCodeLensParticipant implements IJavaCodeLensParticipant
 	private static final String QUARKUS_HTTP_PORT = "quarkus.http.port";
 	private static final String QUARKUS_DEV_HTTP_ROOT_PATH = "%dev.quarkus.http.root-path";
 	private static final String QUARKUS_HTTP_ROOT_PATH = "quarkus.http.root-path";
+	private static final String QUARKUS_REST_PATH = "quarkus.rest.path";
+	private static final String QUARKUS_DEV_REST_PATH = "%dev.quarkus.rest.path";
 
 	@Override
 	public void beginCodeLens(JavaCodeLensContext context, IProgressMonitor monitor) throws CoreException {
@@ -45,16 +47,22 @@ public class QuarkusJaxRsCodeLensParticipant implements IJavaCodeLensParticipant
 		IJavaProject javaProject = context.getJavaProject();
 		JDTMicroProfileProject mpProject = JDTMicroProfileProjectManager.getInstance()
 				.getJDTMicroProfileProject(javaProject);
-		
+
 		// Retrieve server port from application.properties
 		int serverPort = mpProject.getPropertyAsInteger(QUARKUS_HTTP_PORT, JaxRsContext.DEFAULT_PORT);
 		int devServerPort = mpProject.getPropertyAsInteger(QUARKUS_DEV_HTTP_PORT, serverPort);
 		JaxRsContext.getJaxRsContext(context).setServerPort(devServerPort);
-		
+
 		// Retrieve HTTP root path from application.properties
 		String httpRootPath = mpProject.getProperty(QUARKUS_HTTP_ROOT_PATH);
 		String devHttpRootPath = mpProject.getProperty(QUARKUS_DEV_HTTP_ROOT_PATH, httpRootPath);
 		JaxRsContext.getJaxRsContext(context).setRootPath(devHttpRootPath);
+
+		// quarkus.rest.path
+		// see https://quarkus.io/guides/rest#declaring-endpoints-uri-mapping
+		String restPath = mpProject.getProperty(QUARKUS_REST_PATH);
+		String devRestPath = mpProject.getProperty(QUARKUS_DEV_REST_PATH, restPath);
+		JaxRsContext.getJaxRsContext(context).setApplicationPath(devRestPath);
 	}
 
 	@Override
