@@ -19,6 +19,9 @@ import com.redhat.qute.parser.template.Section;
 import com.redhat.qute.parser.template.SectionKind;
 import com.redhat.qute.parser.template.Template;
 import com.redhat.qute.parser.template.sections.LoopSection;
+import com.redhat.qute.project.QuteProject;
+import com.redhat.qute.project.tags.CallUserTag;
+import com.redhat.qute.utils.UserTagUtils;
 
 /**
  * Object part.
@@ -84,35 +87,35 @@ public class ObjectPart extends Part {
 		Section section = super.getParentSection();
 		while (section != null) {
 			switch (section.getSectionKind()) {
-				case EACH:
-				case FOR:
-					LoopSection iterableSection = (LoopSection) section;
-					if (!iterableSection.isInElseBlock(getStart())) {
-						String alias = iterableSection.getAlias();
-						if (partName.equals(alias)) {
-							return iterableSection.getIterableParameter();
-						}
+			case EACH:
+			case FOR:
+				LoopSection iterableSection = (LoopSection) section;
+				if (!iterableSection.isInElseBlock(getStart())) {
+					String alias = iterableSection.getAlias();
+					if (partName.equals(alias)) {
+						return iterableSection.getIterableParameter();
 					}
-					break;
-				case LET:
-				case SET: {
+				}
+				break;
+			case LET:
+			case SET: {
+				Parameter parameter = section.findParameter(partName);
+				if (parameter != null) {
+					return parameter;
+				}
+				break;
+			}
+			case IF: {
+				if (matchedOptionalParameter == null) {
 					Parameter parameter = section.findParameter(partName);
-					if (parameter != null) {
-						return parameter;
+					if (parameter != null && parameter.isOptional()) {
+						// here {foo} is inside an #if block which matches {#if foo?? }
+						matchedOptionalParameter = parameter;
 					}
-					break;
 				}
-				case IF: {
-					if (matchedOptionalParameter == null) {
-						Parameter parameter = section.findParameter(partName);
-						if (parameter != null && parameter.isOptional()) {
-							// here {foo} is inside an #if block which matches {#if foo?? }
-							matchedOptionalParameter = parameter;
-						}
-					}
-					break;
-				}
-				default:
+				break;
+			}
+			default:
 			}
 			// ex : count for #each
 			JavaTypeInfoProvider metadata = section.getMetadata(partName);
@@ -133,6 +136,25 @@ public class ObjectPart extends Part {
 		JavaTypeInfoProvider globalVariable = template.findGlobalVariables(this);
 		if (globalVariable != null) {
 			return globalVariable;
+		}
+
+		if (UserTagUtils.isUserTag(template)) {
+			QuteProject project = template.getProject();
+			if (project != null) {
+				int index = template.getTemplateId().lastIndexOf('/');
+				String userTagName = template.getTemplateId().substring(index + 1, template.getTemplateId().length());
+				index = userTagName.lastIndexOf('.');
+				if (index != -1) {
+					userTagName = userTagName.substring(0, index);
+				}
+				CallUserTag call = project.getTagRegistry().getCall(userTagName);
+				if (call != null) {
+					JavaTypeInfoProvider provider = call.inferType(partName);
+					if (provider != null) {
+						return provider;
+					}
+				}
+			}
 		}
 
 		// There are no parameter which matches the object part name from #set, #let,

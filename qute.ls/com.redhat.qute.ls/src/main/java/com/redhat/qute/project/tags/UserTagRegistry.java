@@ -14,7 +14,9 @@ package com.redhat.qute.project.tags;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
@@ -25,6 +27,7 @@ import com.redhat.qute.commons.TemplateRootPath;
 import com.redhat.qute.commons.usertags.QuteUserTagParams;
 import com.redhat.qute.commons.usertags.UserTagInfo;
 import com.redhat.qute.ls.api.QuteUserTagProvider;
+import com.redhat.qute.parser.template.Parameter;
 import com.redhat.qute.project.QuteProject;
 import com.redhat.qute.services.completions.CompletionRequest;
 
@@ -38,6 +41,17 @@ import com.redhat.qute.services.completions.CompletionRequest;
  */
 public class UserTagRegistry {
 
+	public static class UserTagCall {
+		public final String userTagName;
+		public final Parameter parameter;
+
+		public UserTagCall(String userTagName, Parameter parameter) {
+			this.userTagName = userTagName;
+			this.parameter = parameter;
+		}
+
+	}
+
 	private final QuteProject project;
 	private final List<TemplateRootPath> templateRootPaths;
 
@@ -47,6 +61,7 @@ public class UserTagRegistry {
 	private final QuteCompletionsForBinaryUserTagSection completionsBinaryUserTag;
 
 	private CompletableFuture<List<UserTag>> userTagFuture;
+	private final Map<String, CallUserTag> calls;
 
 	public UserTagRegistry(QuteProject project, List<TemplateRootPath> templateRootPaths,
 			QuteUserTagProvider userTagProvider) {
@@ -55,6 +70,7 @@ public class UserTagRegistry {
 		this.userTagProvider = userTagProvider;
 		this.completionsSourceUserTag = new QuteCompletionsForSourceUserTagSection();
 		this.completionsBinaryUserTag = new QuteCompletionsForBinaryUserTagSection();
+		this.calls = new HashMap<>();
 	}
 
 	/**
@@ -156,5 +172,32 @@ public class UserTagRegistry {
 
 	public void refreshDataModel() {
 		completionsSourceUserTag.clear();
+	}
+
+	private CallUserTag geOrCreatetCall(String userTagName) {
+		CallUserTag callUserTag = calls.get(userTagName);
+		if (callUserTag == null) {
+			callUserTag = new CallUserTag(userTagName);
+			calls.put(userTagName, callUserTag);
+		}
+		return callUserTag;
+	}
+
+	public CallUserTag getCall(String userTagName) {
+		return calls.get(userTagName);
+	}
+
+	public void registerCalls(String uri, Map<String, List<Parameter>> calls, Set<String> oldTagNames) {
+		for (Map.Entry<String, List<Parameter>> entry : calls.entrySet()) {
+			String userTagName = entry.getKey();
+			CallUserTag callUserTag = geOrCreatetCall(userTagName);
+			callUserTag.registerCall(uri, entry.getValue());
+		}
+		for (String tagName : oldTagNames) {
+			CallUserTag callUserTag = getCall(tagName);
+			if (callUserTag != null) {
+				callUserTag.registerCall(uri, Collections.emptyList());
+			}
+		}
 	}
 }
