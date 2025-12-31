@@ -192,7 +192,9 @@ public class ValueResolverInfo {
 	 * @return the Java element kind (type, method, field).
 	 */
 	public JavaElementKind getJavaElementKind() {
-		if (signature.contains("(")) {
+		if (signature.contains("/")) {
+			return JavaElementKind.RESOURCE;
+		} else if (signature.contains("(")) {
 			return JavaElementKind.METHOD;
 		} else if (signature.contains(":")) {
 			return JavaElementKind.FIELD;

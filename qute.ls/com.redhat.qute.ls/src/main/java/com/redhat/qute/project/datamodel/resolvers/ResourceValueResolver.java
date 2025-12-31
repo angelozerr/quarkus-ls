@@ -1,0 +1,173 @@
+/*******************************************************************************
+* Copyright (c) 2025 Red Hat Inc. and others.
+* All rights reserved. This program and the accompanying materials
+* which accompanies this distribution, and is available at
+* http://www.eclipse.org/legal/epl-v20.html
+*
+* SPDX-License-Identifier: EPL-2.0
+*
+* Contributors:
+*     Red Hat Inc. - initial API and implementation
+*******************************************************************************/
+package com.redhat.qute.project.datamodel.resolvers;
+
+import java.util.List;
+
+import org.eclipse.xtext.xbase.lib.util.ToStringBuilder;
+
+import com.redhat.qute.commons.JavaTypeInfo;
+import com.redhat.qute.commons.datamodel.resolvers.ValueResolverKind;
+import com.redhat.qute.parser.template.JavaTypeInfoProvider;
+import com.redhat.qute.parser.template.Node;
+
+/**
+ * Qute field value resolver.
+ *
+ * <code>
+ &#64;Named("flash")
+public class Flash
+ * </code>
+ * 
+ * becomes :
+ * 
+ * <code>
+ * {inject:flash}
+ * </code>
+ * 
+ *
+ * @author Angelo ZERR
+ *
+ */
+public class ResourceValueResolver extends JavaTypeInfo implements ValueResolver, JavaTypeInfoProvider {
+
+	private String locale;
+
+	private String message;
+	
+	private String namespace;
+
+	private String sourceType;
+
+	private String named;
+
+	private Boolean globalVariable;
+
+	private ValueResolverKind kind;
+
+	@Override
+	public String getNamespace() {
+		return namespace;
+	}
+
+	@Override
+	public List<String> getMatchNames() {
+		return null;
+	}
+
+	@Override
+	public String getNamed() {
+		return named;
+	}
+
+	public void setNamed(String named) {
+		this.named = named;
+	}
+
+	/**
+	 * Set the namespace of the resolver and null otherwise.
+	 *
+	 * @param namespace the namespace of the resolver and null otherwise.
+	 */
+	public void setNamespace(String namespace) {
+		this.namespace = namespace;
+	}
+
+	@Override
+	public String getSourceType() {
+		return sourceType;
+	}
+
+	/**
+	 * Set the source type.
+	 *
+	 * @param sourceType the source type.
+	 */
+	public void setSourceType(String sourceType) {
+		this.sourceType = sourceType;
+	}
+
+	public boolean isGlobalVariable() {
+		return globalVariable != null && globalVariable.booleanValue();
+	}
+
+	public void setGlobalVariable(boolean globalVariable) {
+		this.globalVariable = globalVariable;
+	}
+
+	@Override
+	public Node getJavaTypeOwnerNode() {
+		return null;
+	}
+
+	@Override
+	public String getJavaType() {
+		return getJavaElementType();
+	}
+
+	@Override
+	public ValueResolverKind getKind() {
+		return kind;
+	}
+
+	public void setKind(ValueResolverKind kind) {
+		this.kind = kind;
+	}
+
+	/**
+	 * Returns the locale of the message and null otherwise.
+	 * 
+	 * @return the locale of the message and null otherwise.
+	 */
+	public String getLocale() {
+		return locale;
+	}
+
+	/**
+	 * Set the locale.
+	 * 
+	 * @param locale the locale.
+	 */
+	public void setLocale(String locale) {
+		this.locale = locale;
+	}
+
+	/**
+	 * Returns the message content and null otherwise.
+	 * 
+	 * @return the message content and null otherwise.
+	 */
+	public String getMessage() {
+		return message;
+	}
+
+	/**
+	 * Set the message content.
+	 * 
+	 * @param message the message content.
+	 */
+	public void setMessage(String message) {
+		this.message = message;
+	}
+	
+	@Override
+	public String toString() {
+		ToStringBuilder b = new ToStringBuilder(this);
+		b.add("named", this.getNamed());
+		b.add("namespace", this.getNamespace());
+		b.add("signature", this.getSignature());
+		b.add("sourceType", this.getSourceType());
+		b.add("globalVariable", this.isGlobalVariable());
+		b.add("kind", this.getKind());
+		return b.toString();
+	}
+}

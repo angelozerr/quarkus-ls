@@ -61,6 +61,7 @@ import com.redhat.qute.project.datamodel.ExtendedDataModelTemplate;
 import com.redhat.qute.project.datamodel.resolvers.FieldValueResolver;
 import com.redhat.qute.project.datamodel.resolvers.MessageValueResolver;
 import com.redhat.qute.project.datamodel.resolvers.MethodValueResolver;
+import com.redhat.qute.project.datamodel.resolvers.ResourceValueResolver;
 import com.redhat.qute.project.datamodel.resolvers.TypeValueResolver;
 import com.redhat.qute.project.datamodel.resolvers.ValueResolver;
 import com.redhat.qute.project.documents.QuteClosedTextDocuments;
@@ -84,10 +85,7 @@ import com.redhat.qute.utils.UserTagUtils;
  */
 public class QuteProject {
 
-	private static String[] TEMPLATE_VARIANTS = { "",
-			".html", ".qute.html",
-			".json", ".qute.json",
-			".txt", ".qute.txt",
+	private static String[] TEMPLATE_VARIANTS = { "", ".html", ".qute.html", ".json", ".qute.json", ".txt", ".qute.txt",
 			".yaml", ".qute.yaml", ".yml", ".qute.yml" };
 
 	private final String uri;
@@ -119,8 +117,7 @@ public class QuteProject {
 
 	private List<QuteProject> projectDependencies;
 
-	public QuteProject(ProjectInfo projectInfo, QuteProjectRegistry projectRegistry,
-			TemplateValidator validator) {
+	public QuteProject(ProjectInfo projectInfo, QuteProjectRegistry projectRegistry, TemplateValidator validator) {
 		this.uri = projectInfo.getUri();
 		this.templateRootPaths = projectInfo.getTemplateRootPaths();
 		this.documents = new HashMap<>();
@@ -238,8 +235,7 @@ public class QuteProject {
 	 *                        will returns all declared insert parameters.
 	 * @return the insert parameter list with the given name
 	 *         <code>insertParamater</code> ({#insert name}) declared in the
-	 *         template
-	 *         identified by the given template id and null otherwise.
+	 *         template identified by the given template id and null otherwise.
 	 */
 	public List<Parameter> findInsertTagParameter(String templateId, String insertParamater) {
 		closedDocuments.loadClosedTemplatesIfNeeded();
@@ -375,8 +371,7 @@ public class QuteProject {
 						return null;
 					}
 					return new ExtendedDataModelProject(project);
-				})
-				.thenApply(p -> {
+				}).thenApply(p -> {
 					tagRegistry.refreshDataModel();
 					return p;
 				});
@@ -916,8 +911,7 @@ public class QuteProject {
 	}
 
 	private boolean findMethod(ResolvedJavaTypeInfo baseType, String methodName,
-			List<ResolvedJavaTypeInfo> parameterTypes, JavaMemberResult result,
-			Set<ResolvedJavaTypeInfo> visited) {
+			List<ResolvedJavaTypeInfo> parameterTypes, JavaMemberResult result, Set<ResolvedJavaTypeInfo> visited) {
 		if (visited.contains(baseType)) {
 			return false;
 		}
@@ -1338,6 +1332,13 @@ public class QuteProject {
 							return resolver;
 						}
 					}
+					// Search in resource resolvers
+					List<ResourceValueResolver> resourceResolvers = dataModel.getResourceValueResolvers();
+					for (ResourceValueResolver resolver : resourceResolvers) {
+						if (isMatchNamespaceResolver(namespace, partName, resolver, dataModel)) {
+							return resolver;
+						}
+					}
 					return null;
 				});
 	}
@@ -1506,6 +1507,15 @@ public class QuteProject {
 				}
 			}
 		}
+
+		List<ResourceValueResolver> allResourceResolvers = dataModel.getResourceValueResolvers();
+		if (allResourceResolvers != null) {
+			for (ValueResolver resolver : allResourceResolvers) {
+				if (isMatchNamespace(resolver, namespace, dataModel)) {
+					namespaceResolvers.add(resolver);
+				}
+			}
+		}
 		return namespaceResolvers;
 	}
 
@@ -1543,8 +1553,8 @@ public class QuteProject {
 				: javaTypeInfo.getName();
 		String signature = javaMemberInfo.getGenericMember() == null ? javaMemberInfo.getSignature()
 				: javaMemberInfo.getGenericMember().getSignature();
-		return projectRegistry.getJavadoc(new QuteJavadocParams(typeName, getUri(), javaMemberInfo.getName(),
-				signature, hasMarkdown ? DocumentFormat.Markdown : DocumentFormat.PlainText));
+		return projectRegistry.getJavadoc(new QuteJavadocParams(typeName, getUri(), javaMemberInfo.getName(), signature,
+				hasMarkdown ? DocumentFormat.Markdown : DocumentFormat.PlainText));
 	}
 
 }
