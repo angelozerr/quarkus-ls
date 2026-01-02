@@ -13,6 +13,7 @@ package com.redhat.qute.project;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -138,7 +139,7 @@ public abstract class MockQuteProject extends QuteProject {
 		project.setTemplates(templates);
 		project.setValueResolvers(valueResolvers);
 		project.setNamespaceResolverInfos(namespaceResolverInfos);
-		return CompletableFuture.completedFuture(new ExtendedDataModelProject(project));
+		return CompletableFuture.completedFuture(new ExtendedDataModelProject(project, Collections.emptySet()));
 	}
 
 	protected static ValueResolverInfo createValueResolver(String namespace, String named, String matchName,

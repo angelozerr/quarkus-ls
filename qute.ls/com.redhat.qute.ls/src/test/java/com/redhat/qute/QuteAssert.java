@@ -1060,7 +1060,7 @@ public class QuteAssert {
 		Template template = TemplateParser.parse(value, fileUri != null ? fileUri : FILE_URI);
 		template.setProjectUri(projectUri);
 		projectRegistry.getProject(new ProjectInfo(projectUri, Collections.emptyList(),
-				Arrays.asList(new TemplateRootPath(templateBaseDir))));
+				Arrays.asList(new TemplateRootPath(templateBaseDir)), Collections.emptySet()));
 		template.setProjectRegistry(projectRegistry);
 		return template;
 	}

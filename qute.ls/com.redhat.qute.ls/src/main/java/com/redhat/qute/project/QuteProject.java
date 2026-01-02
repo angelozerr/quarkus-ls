@@ -66,6 +66,9 @@ import com.redhat.qute.project.datamodel.resolvers.ValueResolver;
 import com.redhat.qute.project.documents.QuteClosedTextDocuments;
 import com.redhat.qute.project.documents.SearchInfoQuery;
 import com.redhat.qute.project.documents.TemplateValidator;
+import com.redhat.qute.project.extensions.CompletionParticipant;
+import com.redhat.qute.project.extensions.DefinitionParticipant;
+import com.redhat.qute.project.extensions.DiagnosticsParticipant;
 import com.redhat.qute.project.tags.UserTag;
 import com.redhat.qute.project.tags.UserTagRegistry;
 import com.redhat.qute.services.QuteCompletableFutures;
@@ -84,15 +87,14 @@ import com.redhat.qute.utils.UserTagUtils;
  */
 public class QuteProject {
 
-	private static String[] TEMPLATE_VARIANTS = { "",
-			".html", ".qute.html",
-			".json", ".qute.json",
-			".txt", ".qute.txt",
+	private static String[] TEMPLATE_VARIANTS = { "", ".html", ".qute.html", ".json", ".qute.json", ".txt", ".qute.txt",
 			".yaml", ".qute.yaml", ".yml", ".qute.yml" };
 
 	private final String uri;
 
 	private final List<TemplateRootPath> templateRootPaths;
+
+	private final Set<String> sourceFolders;
 
 	private final QuteClosedTextDocuments closedDocuments;
 
@@ -119,10 +121,10 @@ public class QuteProject {
 
 	private List<QuteProject> projectDependencies;
 
-	public QuteProject(ProjectInfo projectInfo, QuteProjectRegistry projectRegistry,
-			TemplateValidator validator) {
+	public QuteProject(ProjectInfo projectInfo, QuteProjectRegistry projectRegistry, TemplateValidator validator) {
 		this.uri = projectInfo.getUri();
 		this.templateRootPaths = projectInfo.getTemplateRootPaths();
+		this.sourceFolders = projectInfo.getSourceFolders();
 		this.documents = new HashMap<>();
 		this.closedDocuments = new QuteClosedTextDocuments(this, documents);
 		this.projectRegistry = projectRegistry;
@@ -238,8 +240,7 @@ public class QuteProject {
 	 *                        will returns all declared insert parameters.
 	 * @return the insert parameter list with the given name
 	 *         <code>insertParamater</code> ({#insert name}) declared in the
-	 *         template
-	 *         identified by the given template id and null otherwise.
+	 *         template identified by the given template id and null otherwise.
 	 */
 	public List<Parameter> findInsertTagParameter(String templateId, String insertParamater) {
 		closedDocuments.loadClosedTemplatesIfNeeded();
@@ -374,9 +375,8 @@ public class QuteProject {
 					if (project == null) {
 						return null;
 					}
-					return new ExtendedDataModelProject(project);
-				})
-				.thenApply(p -> {
+					return new ExtendedDataModelProject(project, QuteProject.this.sourceFolders);
+				}).thenApply(p -> {
 					tagRegistry.refreshDataModel();
 					return p;
 				});
@@ -916,8 +916,7 @@ public class QuteProject {
 	}
 
 	private boolean findMethod(ResolvedJavaTypeInfo baseType, String methodName,
-			List<ResolvedJavaTypeInfo> parameterTypes, JavaMemberResult result,
-			Set<ResolvedJavaTypeInfo> visited) {
+			List<ResolvedJavaTypeInfo> parameterTypes, JavaMemberResult result, Set<ResolvedJavaTypeInfo> visited) {
 		if (visited.contains(baseType)) {
 			return false;
 		}
@@ -1379,6 +1378,16 @@ public class QuteProject {
 					if (dataModel == null) {
 						return null;
 					}
+
+					// Search in type resolvers
+					List<TypeValueResolver> typeResolvers = dataModel.getTypeValueResolvers();
+					for (TypeValueResolver resolver : typeResolvers) {
+						if (resolver.getKind() == ValueResolverKind.Message
+								&& isMatchNamespaceResolver(namespace, methodName, resolver, dataModel)) {
+							return (MessageValueResolver) resolver;
+						}
+					}
+
 					// Search in methods resolvers
 					List<MethodValueResolver> methodResolvers = dataModel.getMethodValueResolvers();
 					for (MethodValueResolver resolver : methodResolvers) {
@@ -1543,8 +1552,23 @@ public class QuteProject {
 				: javaTypeInfo.getName();
 		String signature = javaMemberInfo.getGenericMember() == null ? javaMemberInfo.getSignature()
 				: javaMemberInfo.getGenericMember().getSignature();
-		return projectRegistry.getJavadoc(new QuteJavadocParams(typeName, getUri(), javaMemberInfo.getName(),
-				signature, hasMarkdown ? DocumentFormat.Markdown : DocumentFormat.PlainText));
+		return projectRegistry.getJavadoc(new QuteJavadocParams(typeName, getUri(), javaMemberInfo.getName(), signature,
+				hasMarkdown ? DocumentFormat.Markdown : DocumentFormat.PlainText));
+	}
+
+	public List<CompletionParticipant> getCompletionParticipants() {
+		ExtendedDataModelProject dataModel = getDataModelProject().getNow(null);
+		return dataModel != null ? dataModel.getCompletionParticipants() : Collections.emptyList();
+	}
+
+	public List<DefinitionParticipant> getDefinitionParticipants() {
+		ExtendedDataModelProject dataModel = getDataModelProject().getNow(null);
+		return dataModel != null ? dataModel.getDefinitionParticipants() : Collections.emptyList();
+	}
+
+	public List<DiagnosticsParticipant> getDiagnosticsParticipants() {
+		ExtendedDataModelProject dataModel = getDataModelProject().getNow(null);
+		return dataModel != null ? dataModel.getDiagnosticsParticipants() : Collections.emptyList();
 	}
 
 }

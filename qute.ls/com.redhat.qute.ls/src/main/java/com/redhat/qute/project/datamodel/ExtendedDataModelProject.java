@@ -11,16 +11,19 @@
 *******************************************************************************/
 package com.redhat.qute.project.datamodel;
 
-import static com.redhat.qute.project.datamodel.resolvers.ValueResolver.MATCH_NAME_ANY;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.ServiceConfigurationError;
+import java.util.ServiceLoader;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 import com.redhat.qute.commons.JavaElementKind;
@@ -34,13 +37,19 @@ import com.redhat.qute.commons.datamodel.resolvers.NamespaceResolverInfo;
 import com.redhat.qute.commons.datamodel.resolvers.ValueResolverKind;
 import com.redhat.qute.parser.expression.NamespacePart;
 import com.redhat.qute.project.datamodel.resolvers.FieldValueResolver;
-import com.redhat.qute.project.datamodel.resolvers.MessageValueResolver;
+import com.redhat.qute.project.datamodel.resolvers.MessageMethodValueResolver;
 import com.redhat.qute.project.datamodel.resolvers.MethodValueResolver;
 import com.redhat.qute.project.datamodel.resolvers.TypeValueResolver;
+import com.redhat.qute.project.extensions.CompletionParticipant;
+import com.redhat.qute.project.extensions.DefinitionParticipant;
+import com.redhat.qute.project.extensions.DiagnosticsParticipant;
+import com.redhat.qute.project.extensions.ProjectExtension;
 import com.redhat.qute.utils.JSONUtility;
 import com.redhat.qute.utils.StringUtils;
 
 public class ExtendedDataModelProject extends DataModelProject<ExtendedDataModelTemplate> {
+
+	private static final Logger LOGGER = Logger.getLogger(ExtendedDataModelProject.class.getName());
 
 	private final Set<String> allNamespaces;
 
@@ -56,7 +65,17 @@ public class ExtendedDataModelProject extends DataModelProject<ExtendedDataModel
 
 	private Set<String> javaTypesSupportedInNativeMode;
 
-	public ExtendedDataModelProject(DataModelProject<DataModelTemplate<DataModelParameter>> project) {
+	private final List<ProjectExtension> extensions;
+
+	private final Set<String> sourceFolders;
+
+	private final List<CompletionParticipant> completionParticipants;
+	private final List<DefinitionParticipant> definitionParticipants;
+	private final List<DiagnosticsParticipant> diagnosticsParticipants;
+
+	public ExtendedDataModelProject(DataModelProject<DataModelTemplate<DataModelParameter>> project,
+			Set<String> sourceFolders) {
+		this.sourceFolders = sourceFolders;
 		super.setTemplates(createTemplates(project.getTemplates()));
 		super.setNamespaceResolverInfos(project.getNamespaceResolverInfos());
 
@@ -76,6 +95,37 @@ public class ExtendedDataModelProject extends DataModelProject<ExtendedDataModel
 		allNamespaces = getAllNamespaces(project);
 		allTemplateExtensionsClasses = getAllTemplateExtensionsClasses(project);
 		similarNamespaces = getSimilarNamespaces(project);
+
+		this.extensions = new ArrayList<>();
+		this.completionParticipants = new ArrayList<>();
+		this.definitionParticipants = new ArrayList<>();
+		this.diagnosticsParticipants = new ArrayList<>();
+		Iterator<ProjectExtension> extensions = ServiceLoader.load(ProjectExtension.class).iterator();
+		while (extensions.hasNext()) {
+			try {
+				registerExtension(extensions.next());
+			} catch (ServiceConfigurationError e) {
+				LOGGER.log(Level.SEVERE, "Error while instantiating extension", e);
+			}
+		}
+	}
+
+	void registerExtension(ProjectExtension extension) {
+		try {
+			extensions.add(extension);
+			extension.start(this);
+		} catch (Exception e) {
+			LOGGER.log(Level.SEVERE, "Error while initializing extension <" + extension.getClass().getName() + ">", e);
+		}
+	}
+
+	void unregisterExtension(ProjectExtension extension) {
+		try {
+			extensions.remove(extension);
+			extension.stop(this);
+		} catch (Exception e) {
+			LOGGER.log(Level.SEVERE, "Error while stopping extension <" + extension.getClass().getName() + ">", e);
+		}
 	}
 
 	private static void updateValueResolvers(List<TypeValueResolver> typeValueResolvers,
@@ -84,46 +134,46 @@ public class ExtendedDataModelProject extends DataModelProject<ExtendedDataModel
 		project.getValueResolvers().forEach(resolver -> {
 			JavaElementKind kind = resolver.getJavaElementKind();
 			switch (kind) {
-				case TYPE:
-					TypeValueResolver typeValueResolver = new TypeValueResolver();
-					typeValueResolver.setNamed(resolver.getNamed());
-					typeValueResolver.setNamespace(resolver.getNamespace());
-					typeValueResolver.setSignature(resolver.getSignature());
-					typeValueResolver.setSourceType(resolver.getSourceType());
-					typeValueResolver.setGlobalVariable(resolver.isGlobalVariable());
-					typeValueResolver.setKind(resolver.getKind());
-					typeValueResolvers.add(typeValueResolver);
-					break;
-				case FIELD:
-					FieldValueResolver fieldValueResolver = new FieldValueResolver();
-					fieldValueResolver.setNamed(resolver.getNamed());
-					fieldValueResolver.setNamespace(resolver.getNamespace());
-					fieldValueResolver.setSignature(resolver.getSignature());
-					fieldValueResolver.setSourceType(resolver.getSourceType());
-					fieldValueResolver.setGlobalVariable(resolver.isGlobalVariable());
-					fieldValueResolver.setKind(resolver.getKind());
-					fieldValueResolvers.add(fieldValueResolver);
-					break;
-				case METHOD:
-					MethodValueResolver methodValueResolver = resolver.getKind() == ValueResolverKind.Message
-							? new MessageValueResolver()
-							: new MethodValueResolver();
-					methodValueResolver.setNamed(resolver.getNamed());
-					methodValueResolver.setNamespace(resolver.getNamespace());
-					methodValueResolver.setMatchNames(resolver.getMatchNames());
-					methodValueResolver.setSignature(resolver.getSignature());
-					methodValueResolver.setSourceType(resolver.getSourceType());
-					methodValueResolver.setGlobalVariable(resolver.isGlobalVariable());
-					methodValueResolver.setKind(resolver.getKind());
-					if (resolver.getKind() == ValueResolverKind.Message && resolver.getData() != null) {
-						MessageResolverData data = JSONUtility.toModel(resolver.getData(), MessageResolverData.class);
-						((MessageValueResolver) methodValueResolver).setLocale(data.getLocale());
-						((MessageValueResolver) methodValueResolver).setMessage(data.getMessage());
-					}
-					methodValueResolvers.add(methodValueResolver);
-					break;
-				default:
-					break;
+			case TYPE:
+				TypeValueResolver typeValueResolver = new TypeValueResolver();
+				typeValueResolver.setNamed(resolver.getNamed());
+				typeValueResolver.setNamespace(resolver.getNamespace());
+				typeValueResolver.setSignature(resolver.getSignature());
+				typeValueResolver.setSourceType(resolver.getSourceType());
+				typeValueResolver.setGlobalVariable(resolver.isGlobalVariable());
+				typeValueResolver.setKind(resolver.getKind());
+				typeValueResolvers.add(typeValueResolver);
+				break;
+			case FIELD:
+				FieldValueResolver fieldValueResolver = new FieldValueResolver();
+				fieldValueResolver.setNamed(resolver.getNamed());
+				fieldValueResolver.setNamespace(resolver.getNamespace());
+				fieldValueResolver.setSignature(resolver.getSignature());
+				fieldValueResolver.setSourceType(resolver.getSourceType());
+				fieldValueResolver.setGlobalVariable(resolver.isGlobalVariable());
+				fieldValueResolver.setKind(resolver.getKind());
+				fieldValueResolvers.add(fieldValueResolver);
+				break;
+			case METHOD:
+				MethodValueResolver methodValueResolver = resolver.getKind() == ValueResolverKind.Message
+						? new MessageMethodValueResolver()
+						: new MethodValueResolver();
+				methodValueResolver.setNamed(resolver.getNamed());
+				methodValueResolver.setNamespace(resolver.getNamespace());
+				methodValueResolver.setMatchNames(resolver.getMatchNames());
+				methodValueResolver.setSignature(resolver.getSignature());
+				methodValueResolver.setSourceType(resolver.getSourceType());
+				methodValueResolver.setGlobalVariable(resolver.isGlobalVariable());
+				methodValueResolver.setKind(resolver.getKind());
+				if (resolver.getKind() == ValueResolverKind.Message && resolver.getData() != null) {
+					MessageResolverData data = JSONUtility.toModel(resolver.getData(), MessageResolverData.class);
+					((MessageMethodValueResolver) methodValueResolver).setLocale(data.getLocale());
+					((MessageMethodValueResolver) methodValueResolver).setMessage(data.getMessage());
+				}
+				methodValueResolvers.add(methodValueResolver);
+				break;
+			default:
+				break;
 
 			}
 		});
@@ -253,6 +303,46 @@ public class ExtendedDataModelProject extends DataModelProject<ExtendedDataModel
 			}
 		});
 		return javaTypesSupportedInNativeMode;
+	}
+
+	public List<CompletionParticipant> getCompletionParticipants() {
+		return completionParticipants;
+	}
+
+	public List<DefinitionParticipant> getDefinitionParticipants() {
+		return definitionParticipants;
+	}
+	
+	public List<DiagnosticsParticipant> getDiagnosticsParticipants() {
+		return diagnosticsParticipants;
+	}
+
+	public Set<String> getSourceFolders() {
+		return sourceFolders;
+	}
+
+	public void registerCompletionParticipant(CompletionParticipant completionParticipant) {
+		completionParticipants.add(completionParticipant);
+	}
+
+	public void unregisterCompletionParticipant(CompletionParticipant completionParticipant) {
+		completionParticipants.remove(completionParticipant);
+	}
+
+	public void registerDefinitionParticipant(DefinitionParticipant definitionParticipant) {
+		definitionParticipants.add(definitionParticipant);
+	}
+
+	public void unregisterDefinitionParticipant(DefinitionParticipant definitionParticipant) {
+		definitionParticipants.remove(definitionParticipant);
+	}
+
+	public void registerDiagnosticsParticipant(DiagnosticsParticipant diagnosticsParticipant) {
+		diagnosticsParticipants.add(diagnosticsParticipant);
+	}
+
+	public void unregisterDiagnosticsParticipant(DiagnosticsParticipant diagnosticsParticipant) {
+		diagnosticsParticipants.remove(diagnosticsParticipant);
 	}
 
 }

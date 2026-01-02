@@ -12,6 +12,7 @@
 package com.redhat.qute.commons;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * Project information where a Qute template belongs to.
@@ -25,15 +26,19 @@ public class ProjectInfo {
 
 	private List<TemplateRootPath> templateRootPaths;
 
+	private Set<String> sourceFolders;
+
 	private List<String> projectDependencyUris;
 
 	public ProjectInfo() {
 	}
 
-	public ProjectInfo(String projectUri, List<String> projectDependencies, List<TemplateRootPath> templateRootPaths) {
+	public ProjectInfo(String projectUri, List<String> projectDependencies, List<TemplateRootPath> templateRootPaths,
+			Set<String> sourceFolders) {
 		setUri(projectUri);
 		setProjectDependencyUris(projectDependencies);
 		setTemplateRootPaths(templateRootPaths);
+		setSourceFolders(sourceFolders);
 	}
 
 	/**
@@ -88,5 +93,13 @@ public class ProjectInfo {
 	 */
 	public void setTemplateRootPaths(List<TemplateRootPath> templateRootPaths) {
 		this.templateRootPaths = templateRootPaths;
+	}
+
+	public Set<String> getSourceFolders() {
+		return sourceFolders;
+	}
+
+	public void setSourceFolders(Set<String> sourceFolders) {
+		this.sourceFolders = sourceFolders;
 	}
 }
