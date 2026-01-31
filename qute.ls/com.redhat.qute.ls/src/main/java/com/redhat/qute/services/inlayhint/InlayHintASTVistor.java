@@ -232,9 +232,9 @@ public class InlayHintASTVistor extends ASTVisitor {
 				}
 
 				// ex: {m:application.index.subtitle}
-				for (InlayHintParticipant inlayHintParticipant : project.getExtensions()) {
+				for (InlayHintParticipant inlayHintParticipant : project.getInlayHintParticipants()) {
 					if (inlayHintParticipant.isEnabled()) {
-						inlayHintParticipant.inlayHint(node, inlayHints, cancelChecker);
+						inlayHintParticipant.collectInlayHints(node, inlayHints, cancelChecker);
 					}
 				}
 
