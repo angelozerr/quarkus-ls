@@ -1,3 +1,14 @@
+/*******************************************************************************
+* Copyright (c) 2026 Red Hat Inc. and others.
+* All rights reserved. This program and the accompanying materials
+* which accompanies this distribution, and is available at
+* http://www.eclipse.org/legal/epl-v20.html
+*
+* SPDX-License-Identifier: EPL-2.0
+*
+* Contributors:
+*     Red Hat Inc. - initial API and implementation
+*******************************************************************************/
 package com.redhat.qute.project.extensions.roq.frontmatter;
 
 import com.redhat.qute.parser.injection.InjectionDetector;
@@ -5,15 +16,17 @@ import com.redhat.qute.parser.injection.InjectionMetadata;
 import com.redhat.qute.parser.injection.InjectionMode;
 import com.redhat.qute.parser.scanner.MultiLineStream;
 
+/**
+ * Yaml frontmatter detector.
+ */
 public class YamlFrontMatterDetector implements InjectionDetector {
+
+	public static final String YAML_FRONT_MATTER_LANGUAGE_ID = "yaml-frontmatter";
 
 	private static final int[] FRONT_MATTER_DELIMITER = new int[] { '-', '-', '-' };
 
-	private static final InjectionMetadata YAML_METADATA = new InjectionMetadata("yaml", InjectionMode.EMBEDDED); // Embedded
-																													// -
-																													// no
-																													// Qute
-																													// parsing!
+	private static final InjectionMetadata YAML_METADATA = new InjectionMetadata(YAML_FRONT_MATTER_LANGUAGE_ID,
+			InjectionMode.EMBEDDED);
 
 	@Override
 	public InjectionMetadata detectInjection(MultiLineStream stream) {
@@ -62,11 +75,11 @@ public class YamlFrontMatterDetector implements InjectionDetector {
 			if (ch == '\n') {
 				// Check if it's followed by ---
 				if (stream.peekChar(1) == '-' && stream.peekChar(2) == '-' && stream.peekChar(3) == '-') {
-
 					// Check that --- is followed by a newline or EOF
 					int charAfter = stream.peekChar(4);
 					if (charAfter == -1 || charAfter == '\n' || charAfter == '\r') {
-						// Found! Don't include the \n
+						// Found! Advance PAST the \n to include it in content
+						stream.advance(1);
 						return true;
 					}
 				}
@@ -74,10 +87,10 @@ public class YamlFrontMatterDetector implements InjectionDetector {
 				// Check if it's \r\n followed by ---
 				if (stream.peekChar(1) == '\n' && stream.peekChar(2) == '-' && stream.peekChar(3) == '-'
 						&& stream.peekChar(4) == '-') {
-
 					int charAfter = stream.peekChar(5);
 					if (charAfter == -1 || charAfter == '\n' || charAfter == '\r') {
-						// Found! Don't include the \r\n
+						// Found! Advance PAST the \r\n to include it in content
+						stream.advance(2);
 						return true;
 					}
 				}
@@ -92,18 +105,12 @@ public class YamlFrontMatterDetector implements InjectionDetector {
 
 	@Override
 	public boolean scanEndDelimiter(MultiLineStream stream) {
-		// Scan the newline before ---
-		if (stream.peekChar() == '\r') {
-			stream.advance(1);
-			if (stream.peekChar() == '\n') {
-				stream.advance(1);
-			}
-		} else if (stream.peekChar() == '\n') {
-			stream.advance(1);
-		}
+		// We're now positioned right at the start of ---
+		// The \r\n before --- is already included in the content
 
 		// Scan ---
-		if (stream.advanceIfChars(FRONT_MATTER_DELIMITER)) {
+		boolean success = stream.advanceIfChars(FRONT_MATTER_DELIMITER);
+		if (success) {
 			// Scan the newline after --- (optional)
 			if (stream.peekChar() == '\r') {
 				stream.advance(1);
