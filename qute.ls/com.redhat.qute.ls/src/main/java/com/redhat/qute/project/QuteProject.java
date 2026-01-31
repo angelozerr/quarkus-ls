@@ -77,6 +77,7 @@ import com.redhat.qute.project.documents.SearchInfoQuery;
 import com.redhat.qute.project.documents.TemplateValidator;
 import com.redhat.qute.project.extensions.DataModelTemplateParticipant;
 import com.redhat.qute.project.extensions.ProjectExtension;
+import com.redhat.qute.project.extensions.TemplateLanguageInjectionParticipant;
 import com.redhat.qute.project.tags.UserTag;
 import com.redhat.qute.project.tags.UserTagRegistry;
 import com.redhat.qute.services.QuteCompletableFutures;
@@ -145,6 +146,7 @@ public class QuteProject {
 	private final Set<ProjectFeature> projectFeatures;
 
 	private final Collection<DataModelTemplateParticipant> dataModelTemplateParticipants;
+	private final Collection<TemplateLanguageInjectionParticipant> languageInjectionParticipants;
 
 	public QuteProject(ProjectInfo projectInfo, QuteProjectRegistry projectRegistry) {
 		this.uri = projectInfo.getUri();
@@ -164,6 +166,7 @@ public class QuteProject {
 		// Project extensions
 		this.extensions = new ArrayList<>();
 		this.dataModelTemplateParticipants = new ArrayList<>();
+		this.languageInjectionParticipants = new ArrayList<>();
 		Iterator<ProjectExtension> extensions = ServiceLoader.load(ProjectExtension.class).iterator();
 		while (extensions.hasNext()) {
 			try {
@@ -179,6 +182,9 @@ public class QuteProject {
 			extensions.add(extension);
 			if (extension instanceof DataModelTemplateParticipant) {
 				dataModelTemplateParticipants.add((DataModelTemplateParticipant) extension);
+			}
+			if (extension instanceof TemplateLanguageInjectionParticipant) {
+				languageInjectionParticipants.add((TemplateLanguageInjectionParticipant) extension);
 			}
 		} catch (Exception e) {
 			LOGGER.log(Level.SEVERE, "Error while initializing extension <" + extension.getClass().getName() + ">", e);
@@ -1678,10 +1684,6 @@ public class QuteProject {
 		return extensions;
 	}
 
-	public Collection<InjectionDetector> getInjectionDetectorsFor(Path path) {
-		return Collections.emptyList();
-	}
-
 	public boolean hasProjectFeature(ProjectFeature projectFeature) {
 		return projectFeatures != null && projectFeatures.contains(projectFeature);
 	}
@@ -1703,5 +1705,25 @@ public class QuteProject {
 
 	public Collection<DataModelTemplateParticipant> getDataModelTemplateParticipants() {
 		return dataModelTemplateParticipants;
+	}
+
+	public Collection<InjectionDetector> getInjectionDetectorsFor(Path path) {
+		Collection<TemplateLanguageInjectionParticipant> participants = languageInjectionParticipants;
+		if (!participants.isEmpty()) {
+			Collection<InjectionDetector> allInjectors = null;
+			for (TemplateLanguageInjectionParticipant participant : participants) {
+				if (participant.isEnabled()) {
+					Collection<InjectionDetector> injectors = participant.getInjectionDetectorsFor(path);
+					if (injectors != null && !injectors.isEmpty()) {
+						if (allInjectors == null) {
+							allInjectors = new ArrayList<>();
+						}
+						allInjectors.addAll(injectors);
+					}
+				}
+			}
+			return allInjectors != null ? allInjectors : Collections.emptyList();
+		}
+		return Collections.emptyList();
 	}
 }

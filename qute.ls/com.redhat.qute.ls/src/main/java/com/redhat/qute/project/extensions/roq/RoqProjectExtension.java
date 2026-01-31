@@ -15,6 +15,8 @@ import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -34,6 +36,7 @@ import com.redhat.qute.commons.ProjectFeature;
 import com.redhat.qute.commons.datamodel.DataModelParameter;
 import com.redhat.qute.parser.expression.Part;
 import com.redhat.qute.parser.expression.Parts;
+import com.redhat.qute.parser.injection.InjectionDetector;
 import com.redhat.qute.parser.template.Expression;
 import com.redhat.qute.project.datamodel.ExtendedDataModelParameter;
 import com.redhat.qute.project.datamodel.ExtendedDataModelProject;
@@ -41,10 +44,12 @@ import com.redhat.qute.project.datamodel.ExtendedDataModelTemplate;
 import com.redhat.qute.project.datamodel.resolvers.CustomValueResolver;
 import com.redhat.qute.project.extensions.DataModelTemplateParticipant;
 import com.redhat.qute.project.extensions.ProjectExtension;
+import com.redhat.qute.project.extensions.TemplateLanguageInjectionParticipant;
 import com.redhat.qute.project.extensions.roq.data.DataLoader;
 import com.redhat.qute.project.extensions.roq.data.RoqDataFile;
 import com.redhat.qute.project.extensions.roq.data.json.JsonDataLoader;
 import com.redhat.qute.project.extensions.roq.data.yaml.YamlDataLoader;
+import com.redhat.qute.project.extensions.roq.frontmatter.YamlFrontMatterDetector;
 import com.redhat.qute.services.ResolvingJavaTypeContext;
 import com.redhat.qute.services.completions.CompletionRequest;
 import com.redhat.qute.settings.QuteCompletionSettings;
@@ -102,7 +107,8 @@ import com.redhat.qute.settings.QuteValidationSettings;
  * @see RoqDataFile
  * @see DataLoader
  */
-public class RoqProjectExtension implements ProjectExtension, DataModelTemplateParticipant {
+public class RoqProjectExtension
+		implements ProjectExtension, DataModelTemplateParticipant, TemplateLanguageInjectionParticipant {
 
 	// We might need to allow plugins to contribute to this at some point
 	private static final Set<String> HTML_OUTPUT_EXTENSIONS = Set.of("md", "markdown", "html", "htm", "xhtml",
@@ -133,6 +139,9 @@ public class RoqProjectExtension implements ProjectExtension, DataModelTemplateP
 	 * </pre>
 	 */
 	private static final Map<String /* file extension */, DataLoader> dataLoaderRegistrty;
+
+	private static Collection<InjectionDetector> INJECTOR_DETECTORS = Collections
+			.singletonList(new YamlFrontMatterDetector());
 
 	static {
 		// Initialize the loader registry
@@ -582,5 +591,10 @@ public class RoqProjectExtension implements ProjectExtension, DataModelTemplateP
 			}
 		}
 		return TemplateType.NORMAL_PAGE;
+	}
+
+	@Override
+	public Collection<InjectionDetector> getInjectionDetectorsFor(Path path) {
+		return INJECTOR_DETECTORS;
 	}
 }
