@@ -224,6 +224,7 @@ public class YamlFrontMatterCompletion {
 			// - layout: property is inserted to open completion for available layouts.
 			// - paginate: property is inserted to open completion for available collection.
 			Command command = new Command();
+			command.setTitle("Trigger Suggest");
 			command.setCommand(QuteClientCommandConstants.COMMAND_EDITOR_ACTION_TRIGGET_SUGGEST);
 			item.setCommand(command);
 		}
