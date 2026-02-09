@@ -56,6 +56,15 @@ public class RoqFrontMatterDocumentLinkTest {
 				dl(r(1, 8, 1, 24), layoutUri));
 	}
 
+	@Test
+	public void theme() throws Exception {
+		String template = "---\r\n" + //
+				"layout: :theme/main\r\n" + //
+				"title: My title\r\n" + //
+				"---";
+		testDocumentLinkFor(template);
+	}
+	
 	private static void testDocumentLinkFor(String value, DocumentLink... expected) throws Exception {
 		DocumentLinkParameters p = new DocumentLinkParameters();
 		p.setProjectUri(RoqProject.PROJECT_URI);

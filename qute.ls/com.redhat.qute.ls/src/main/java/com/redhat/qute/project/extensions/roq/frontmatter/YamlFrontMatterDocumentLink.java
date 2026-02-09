@@ -57,10 +57,17 @@ public class YamlFrontMatterDocumentLink {
 							Range range = YamlPositionUtility.createRange(propertyValue);
 							if (range != null) {
 								String layoutFileName = ((YamlScalar) propertyValue).getValue();
-								Path layoutPath = roq.getLayoutPath(filePath, layoutFileName);
-								if (layoutPath != null) {
-									String target = layoutPath.toUri().toASCIIString();
-									links.add(new DocumentLink(range, target != null ? target : ""));
+								if (layoutFileName.indexOf(':') == -1) {
+									// Ignore path with :theme/
+									try {
+										Path layoutPath = roq.getLayoutPath(filePath, layoutFileName);
+										if (layoutPath != null) {
+											String target = layoutPath.toUri().toASCIIString();
+											links.add(new DocumentLink(range, target != null ? target : ""));
+										}
+									} catch (Exception e) {
+										// Ignore error with invalid path
+									}
 								}
 							}
 						}
