@@ -277,6 +277,14 @@ public class RoqProjectExtension implements ProjectExtension, DidChangeWatchedFi
 					loadRoqDataFiles(dataModelProject);
 				}
 			}
+		} else {
+			// Register old inject/cdi data resolver in the new data model project
+			Collection<ResolverCache> resolvers = dataResolverCache.values();
+			for (ResolverCache resolver : resolvers) {
+				// Register both resolvers with the data model
+				dataModelProject.getCustomValueResolvers().add(resolver.cdi);
+				dataModelProject.getCustomValueResolvers().add(resolver.inject);				
+			}
 		}
 	}
 
