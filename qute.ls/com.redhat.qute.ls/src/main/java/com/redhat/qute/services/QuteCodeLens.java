@@ -81,10 +81,13 @@ class QuteCodeLens {
 						collectUserTagCodeLenses(template, cancelChecker, lenses);
 					}
 
-					// Collect code lenses from custom participant (ex: "Insert FontMatter" for Roq application)
-					for (CodeLensParticipant codeLensParticipant : project.getCodeLensParticipants()) {
-						if (codeLensParticipant.isEnabled()) {
-							codeLensParticipant.collectCodeLenses(template, settings, lenses, cancelChecker);
+					// Collect code lenses from custom participant (ex: "Insert FontMatter" for Roq
+					// application)
+					if (project != null) {
+						for (CodeLensParticipant codeLensParticipant : project.getCodeLensParticipants()) {
+							if (codeLensParticipant.isEnabled()) {
+								codeLensParticipant.collectCodeLenses(template, settings, lenses, cancelChecker);
+							}
 						}
 					}
 
