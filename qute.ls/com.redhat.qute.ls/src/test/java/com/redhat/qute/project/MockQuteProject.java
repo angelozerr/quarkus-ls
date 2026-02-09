@@ -13,7 +13,6 @@ package com.redhat.qute.project;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,7 +35,6 @@ import com.redhat.qute.commons.datamodel.resolvers.ValueResolverInfo;
 import com.redhat.qute.commons.datamodel.resolvers.ValueResolverKind;
 import com.redhat.qute.project.datamodel.ExtendedDataModelProject;
 import com.redhat.qute.project.datamodel.resolvers.MethodValueResolver;
-import com.redhat.qute.project.documents.TemplateValidator;
 
 public abstract class MockQuteProject extends QuteProject {
 
