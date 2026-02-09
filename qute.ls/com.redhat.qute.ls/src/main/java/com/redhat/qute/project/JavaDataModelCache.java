@@ -182,7 +182,8 @@ public class JavaDataModelCache {
 			return RESOLVED_JAVA_TYPE_INFO_NULL_FUTURE;
 		}
 		if (visited.contains(javaTypeName)) {
-			return RESOLVED_JAVA_TYPE_INFO_NULL_FUTURE;
+			CompletableFuture<ResolvedJavaTypeInfo> result = getValidResolvedJavaTypeInCache(javaTypeName);
+			return result != null ? result : RESOLVED_JAVA_TYPE_INFO_NULL_FUTURE;
 		}
 		visited.add(javaTypeName);
 

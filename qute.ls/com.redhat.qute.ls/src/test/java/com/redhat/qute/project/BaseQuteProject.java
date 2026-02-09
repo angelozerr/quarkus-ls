@@ -99,9 +99,14 @@ public abstract class BaseQuteProject extends MockQuteProject {
 				true);
 		collection.setExtendedTypes(Arrays.asList("java.lang.Iterable<E>"));
 
+		// AbstractCollection
+		ResolvedJavaTypeInfo abstractCollection = createResolvedJavaTypeInfo("java.util.AbstractCollection<E>",
+				resolvedJavaTypes, true);
+		abstractCollection.setExtendedTypes(Arrays.asList("java.lang.Object", "java.util.Collection<E>"));
+
 		// SequencedCollection
-		ResolvedJavaTypeInfo sequencedCollection = createResolvedJavaTypeInfo("java.util.SequencedCollection<E>", resolvedJavaTypes,
-				true);
+		ResolvedJavaTypeInfo sequencedCollection = createResolvedJavaTypeInfo("java.util.SequencedCollection<E>",
+				resolvedJavaTypes, true);
 		sequencedCollection.setExtendedTypes(Arrays.asList("java.util.Collection<E>"));
 
 		// List
@@ -110,6 +115,15 @@ public abstract class BaseQuteProject extends MockQuteProject {
 		registerMethod("size() : int", list);
 		registerMethod("get(index : int) : E", list);
 		registerMethod("subList(fromIndex : int, toIndex: int) : java.util.List<E>", list);
+
+		// AbstractList
+		ResolvedJavaTypeInfo abstractList = createResolvedJavaTypeInfo("java.util.AbstractList<E>", resolvedJavaTypes,
+				true);
+		abstractList.setExtendedTypes(Arrays.asList("java.util.AbstractCollection<E>", "java.util.List<E>"));
+
+		// ArrayList
+		ResolvedJavaTypeInfo arrayList = createResolvedJavaTypeInfo("java.util.ArrayList<E>", resolvedJavaTypes, true);
+		arrayList.setExtendedTypes(Arrays.asList("java.util.AbstractList<E>", "java.util.List<E>"));
 
 		// Set
 		ResolvedJavaTypeInfo set = createResolvedJavaTypeInfo("java.util.Set<E>", resolvedJavaTypes, true);
