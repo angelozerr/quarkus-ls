@@ -32,6 +32,8 @@ import com.redhat.qute.project.roq.RoqProject;
  */
 public class RoqFrontMatterCompletionsTest {
 
+	// --------------- on keys
+
 	@Test
 	public void frontMatter() throws Exception {
 		String template = "---\r\n" + //
@@ -101,7 +103,19 @@ public class RoqFrontMatterCompletionsTest {
 	}
 
 	@Test
-	public void frontMatterInLayoutWithNullValue() throws Exception {
+	public void beforePropertyWithNoValue() throws Exception {
+		String template = "---\r\n" + //
+				"foo: \r\n" + //
+				"lay|ou";
+		testCompletionFor(template, //
+				c("layout", "layout: $0", r(2, 0, 2, 5)), //
+				c("title", "title: $0", r(2, 0, 2, 5)));
+	}
+
+	// --------------- on value: layout
+
+	@Test
+	public void onLayoutValue() throws Exception {
 		String template = "---\r\n" + //
 				"layout: |\r\n";
 		testCompletionFor(template, //
@@ -129,16 +143,6 @@ public class RoqFrontMatterCompletionsTest {
 		testCompletionFor(template, //
 				c("default", "default", r(2, 8, 2, 8)), //
 				c("page", "page", r(2, 8, 2, 8)));
-	}
-
-	@Test
-	public void beforePropertyWithNoValue() throws Exception {
-		String template = "---\r\n" + //
-				"foo: \r\n" + //
-				"lay|ou";
-		testCompletionFor(template, //
-				c("layout", "layout: $0", r(2, 0, 2, 5)), //
-				c("title", "title: $0", r(2, 0, 2, 5)));
 	}
 
 	@Test
@@ -170,6 +174,62 @@ public class RoqFrontMatterCompletionsTest {
 		testCompletionFor(template, //
 				c("default", "default", r(2, 8, 2, 10)), //
 				c("page", "page", r(2, 8, 2, 10)));
+	}
+
+	// --------------- on value: image
+
+	@Test
+	public void onImageValue() throws Exception {
+		String template = "---\r\n" + //
+				"image: |\r\n";
+		testCompletionFor(template, //
+				c("ico.png", "ico.png", r(1, 7, 1, 7)));
+
+		template = "---\r\n" + //
+				"image: |\r\n" + //
+				"title: My title\r\n";
+		testCompletionFor(template, //
+				c("ico.png", "ico.png", r(1, 7, 1, 7)));
+
+		template = "---\r\n" + //
+				"title: My title\r\n" + //
+				"image: |\r\n";
+		testCompletionFor(template, //
+				c("ico.png", "ico.png", r(2, 7, 2, 7)));
+
+		template = "---\r\n" + //
+				"title: My title\r\n" + //
+				"image: |\r\n" + //
+				"description: Some description\r\n";
+		testCompletionFor(template, //
+				c("ico.png", "ico.png", r(2, 7, 2, 7)));
+	}
+
+	@Test
+	public void onImageValueWithSlash() throws Exception {
+		String template = "---\r\n" + //
+				"image: /|\r\n";
+		testCompletionFor(template, //
+				c("/ico.png", "/ico.png", r(1, 7, 1, 8)));
+
+		template = "---\r\n" + //
+				"image: /|\r\n" + //
+				"title: My title\r\n";
+		testCompletionFor(template, //
+				c("/ico.png", "/ico.png", r(1, 7, 1, 8)));
+
+		template = "---\r\n" + //
+				"title: My title\r\n" + //
+				"image: /|\r\n";
+		testCompletionFor(template, //
+				c("/ico.png", "/ico.png", r(2, 7, 2, 8)));
+
+		template = "---\r\n" + //
+				"title: My title\r\n" + //
+				"image: /|\r\n" + //
+				"description: Some description\r\n";
+		testCompletionFor(template, //
+				c("/ico.png", "/ico.png", r(2, 7, 2, 8)));
 	}
 
 	public static void testCompletionFor(String value, CompletionItem... expectedItems) throws Exception {

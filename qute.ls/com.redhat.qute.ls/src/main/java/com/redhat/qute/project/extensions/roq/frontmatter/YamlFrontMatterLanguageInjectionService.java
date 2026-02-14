@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.lsp4j.CompletionList;
+import org.eclipse.lsp4j.Diagnostic;
 import org.eclipse.lsp4j.DocumentLink;
 import org.eclipse.lsp4j.Hover;
 import org.eclipse.lsp4j.jsonrpc.CancelChecker;
@@ -31,6 +32,7 @@ import com.redhat.qute.services.hover.HoverRequest;
 import com.redhat.qute.settings.QuteCommandCapabilities;
 import com.redhat.qute.settings.QuteCompletionSettings;
 import com.redhat.qute.settings.QuteFormattingSettings;
+import com.redhat.qute.settings.QuteValidationSettings;
 
 /**
  * {@link LanguageInjectionService} implementation to support completion, hover,
@@ -83,6 +85,14 @@ public class YamlFrontMatterLanguageInjectionService implements LanguageInjectio
 		YamlDocument document = (YamlDocument) node.getInjectedNode(() -> cancelChecker.checkCanceled());
 		int offset = hoverRequest.getOffset();
 		return hover.doHover(document, offset, hoverRequest, cancelChecker);
+	}
+
+	@Override
+	public void collectDiagnostics(LanguageInjectionNode node, Template template,
+			QuteValidationSettings validationSettings, List<Diagnostic> diagnostics) {
+		YamlDocument document = (YamlDocument) node.getInjectedNode(() -> {
+		});
+		document.accept(new YamlFrontMatterDiagnosticsVisitor(template, validationSettings, diagnostics));
 	}
 
 }

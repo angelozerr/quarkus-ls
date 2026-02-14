@@ -391,19 +391,25 @@ public class QuteAssert {
 	public static void testDiagnosticsFor(String value, String fileUri, String templateId, String projectUri,
 			String templateBaseDir, boolean filter, QuteValidationSettings validationSettings,
 			QuteNativeSettings nativeImagesSettings, Diagnostic... expected) {
+		testDiagnosticsFor(value, new DiagnosticsParameters(fileUri, templateId, projectUri, templateBaseDir, filter,
+				validationSettings, nativeImagesSettings), expected);
+	}
+
+	public static void testDiagnosticsFor(String value, DiagnosticsParameters p, Diagnostic... expected) {
 		QuteProjectRegistry projectRegistry = new MockQuteProjectRegistry();
-		Template template = createTemplate(value, fileUri, projectUri, templateBaseDir, projectRegistry);
-		template.setTemplateId(templateId);
+		Template template = createTemplate(value, p.getFileUri(), p.getProjectUri(), p.getTemplateBaseDir(),
+				p.getInjectionDetectors(), projectRegistry);
+		template.setTemplateId(p.getTemplateId());
 
 		QuteLanguageService languageService = new QuteLanguageService(projectRegistry);
-		List<Diagnostic> actual = languageService.doDiagnostics(template, validationSettings, nativeImagesSettings,
-				new ResolvingJavaTypeContext(template), () -> {
+		List<Diagnostic> actual = languageService.doDiagnostics(template, p.getValidationSettings(),
+				p.getNativeImagesSettings(), new ResolvingJavaTypeContext(template), () -> {
 				});
 		if (expected == null) {
 			assertTrue(actual.isEmpty());
 			return;
 		}
-		assertDiagnostics(actual, Arrays.asList(expected), filter);
+		assertDiagnostics(actual, Arrays.asList(expected), p.isFilter());
 	}
 
 	public static void assertDiagnostics(List<Diagnostic> actual, Diagnostic... expected) {

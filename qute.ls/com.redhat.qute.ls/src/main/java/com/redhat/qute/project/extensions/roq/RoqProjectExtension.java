@@ -24,7 +24,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import org.eclipse.lsp4j.CodeLens;
@@ -116,6 +117,15 @@ public class RoqProjectExtension implements ProjectExtension, DidChangeWatchedFi
 			"asciidoc", "adoc");
 	private static final Set<String> INDEX_FILES = HTML_OUTPUT_EXTENSIONS.stream().map(e -> "index." + e)
 			.collect(Collectors.toSet());
+
+	private static final Set<String> IMAGE_EXTENSIONS = Set.of(//
+			"jpg", "jpeg", "png", "gif", "webp", //
+			"bmp", "tiff", "tif", "svg", "ico", //
+			"avif", "heic", "heif");
+
+	private static final Predicate<Path> LAYOUT_FILE_FILTER = p -> !isImage(p);
+
+	private static final Predicate<Path> IMAGE_FILE_FILTER = p -> isImage(p);
 
 	/**
 	 * Registry mapping file extensions to their corresponding data loaders.
@@ -283,7 +293,7 @@ public class RoqProjectExtension implements ProjectExtension, DidChangeWatchedFi
 			for (ResolverCache resolver : resolvers) {
 				// Register both resolvers with the data model
 				dataModelProject.getCustomValueResolvers().add(resolver.cdi);
-				dataModelProject.getCustomValueResolvers().add(resolver.inject);				
+				dataModelProject.getCustomValueResolvers().add(resolver.inject);
 			}
 		}
 	}
@@ -545,30 +555,46 @@ public class RoqProjectExtension implements ProjectExtension, DidChangeWatchedFi
 		return dataDir;
 	}
 
-	public void collectLayouts(Path filePath, Consumer<Path> collector) {
+	public void collectLayouts(Path filePath, BiConsumer<Path, Path> collector) {
 		// collect layouts from templates/layouts
 
 		Path projectFolder = dataModelProject.getProjectFolder();
 		if (projectFolder != null) {
 			Path layoutsFolder = projectFolder.resolve("templates/layouts");
-			collectFiles(layoutsFolder, collector);
+			collectFiles(layoutsFolder, layoutsFolder, collector, LAYOUT_FILE_FILTER);
 		}
 
 		// collect layouts from src/main/resources/templates/layouts
 		Set<Path> sourcePaths = dataModelProject.getSourcePaths();
 		for (Path sourcePath : sourcePaths) {
 			Path layoutsFolder = sourcePath.resolve("templates/layouts");
-			collectFiles(layoutsFolder, collector);
+			collectFiles(layoutsFolder, layoutsFolder, collector, LAYOUT_FILE_FILTER);
 		}
 	}
 
-	private void collectFiles(Path dir, Consumer<Path> collector) {
+	public void collectImages(Path filePath, BiConsumer<Path, Path> collector) {
+		// 1. collect images from the folder of the given file path
+		Path imagesFolder = filePath.getParent();
+		collectFiles(imagesFolder, imagesFolder, collector, IMAGE_FILE_FILTER);
+
+		// 2. collect images from public/images
+		Path projectFolder = dataModelProject.getProjectFolder();
+		if (projectFolder != null) {
+			imagesFolder = projectFolder.resolve("public/images");
+			collectFiles(imagesFolder, imagesFolder, collector, IMAGE_FILE_FILTER);
+		}
+	}
+
+	private void collectFiles(Path parent, Path dir, BiConsumer<Path, Path> collector, Predicate<Path> filterFile) {
 		if (dir != null && Files.isDirectory(dir)) {
 			try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir)) {
 				for (Path file : stream) {
-					// Only process regular files (skip directories, symlinks, etc.)
-					if (Files.isRegularFile(file)) {
-						collector.accept(file);
+					if (Files.isDirectory(file)) {
+						collectFiles(parent, file, collector, filterFile);
+					} else {
+						if (filterFile.test(file)) {
+							collector.accept(parent, file);
+						}
 					}
 				}
 			} catch (IOException e) {
@@ -650,6 +676,26 @@ public class RoqProjectExtension implements ProjectExtension, DidChangeWatchedFi
 		return existingLayoutFolder.get(0).resolve(layoutFileName + ".html");
 	}
 
+	public Path getImagePath(Path filePath, String imageFilePath) {
+		imageFilePath = imageFilePath.trim();
+		if (imageFilePath.isEmpty()) {
+			return null;
+		}
+		if (imageFilePath.charAt(0) == '/') {
+			imageFilePath = imageFilePath.substring(1);
+		}
+		// 1. Check if image exists in the folder of the given file path
+		Path imagesFolder = filePath.getParent();
+		Path imagesPath = imagesFolder.resolve(imageFilePath);
+		if (Files.exists(imagesPath)) {
+			return imagesPath;
+		}
+		// 2. Check if image exists in the public.images folder
+		Path projectFolder = dataModelProject.getProjectFolder();
+		imagesFolder = projectFolder.resolve("public/images");
+		return imagesFolder.resolve(imageFilePath);
+	}
+
 	public Set<String> getConfiguredCollections() {
 		return configuredCollections;
 	}
@@ -678,6 +724,26 @@ public class RoqProjectExtension implements ProjectExtension, DidChangeWatchedFi
 			}
 		}
 		return false;
+	}
+
+	/**
+	 * Returns true if the given path points to a file with an image extension. Does
+	 * not check if the file actually exists on disk.
+	 *
+	 * @param path the file path to check
+	 * @return true if the file has an image extension, false otherwise
+	 */
+	private static boolean isImage(Path path) {
+		if (path == null) {
+			return false;
+		}
+		String fileName = path.getFileName() != null ? path.getFileName().toString() : "";
+		int dotIndex = fileName.lastIndexOf('.');
+		if (dotIndex < 0 || dotIndex == fileName.length() - 1) {
+			return false;
+		}
+		String extension = fileName.substring(dotIndex + 1).toLowerCase();
+		return IMAGE_EXTENSIONS.contains(extension);
 	}
 
 }

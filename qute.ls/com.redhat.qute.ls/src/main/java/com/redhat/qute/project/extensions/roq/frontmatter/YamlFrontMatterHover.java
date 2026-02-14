@@ -12,8 +12,11 @@
 package com.redhat.qute.project.extensions.roq.frontmatter;
 
 import static com.redhat.qute.project.extensions.roq.frontmatter.YamlFrontMatterDocumentationUtils.getDocumentation;
+import static com.redhat.qute.project.extensions.roq.frontmatter.YamlFrontMatterDocumentationUtils.getImageDocumentation;
 import static com.redhat.qute.services.QuteHover.NO_HOVER;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.lsp4j.Hover;
@@ -22,11 +25,15 @@ import org.eclipse.lsp4j.MarkupKind;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 
+import com.redhat.qute.commons.FileUtils;
+import com.redhat.qute.parser.template.Template;
 import com.redhat.qute.parser.yaml.YamlDocument;
 import com.redhat.qute.parser.yaml.YamlNode;
 import com.redhat.qute.parser.yaml.YamlNodeKind;
 import com.redhat.qute.parser.yaml.YamlPositionUtility;
 import com.redhat.qute.parser.yaml.YamlProperty;
+import com.redhat.qute.parser.yaml.YamlScalar;
+import com.redhat.qute.project.extensions.roq.RoqProjectExtension;
 import com.redhat.qute.project.extensions.roq.frontmatter.schema.FrontMatterProperty;
 import com.redhat.qute.project.extensions.roq.frontmatter.schema.YamlFrontMatterSchemaProvider;
 import com.redhat.qute.services.hover.HoverRequest;
@@ -42,20 +49,54 @@ public class YamlFrontMatterHover {
 		if (yamlNode != null && yamlNode.getKind() == YamlNodeKind.YamlProperty) {
 			YamlProperty property = (YamlProperty) yamlNode;
 			if (property.isInKey(offset)) {
-				// Hover on key (ex: layo|ut:)
-				String propertyKey = property.getKey().toString();
-				FrontMatterProperty frontMatterProperty = YamlFrontMatterSchemaProvider.getInstance()
-						.getProperty(propertyKey);
-				if (frontMatterProperty != null) {
+				// Hover on key (ex: layo|ut:, ima|ge: )
+				return doHoverOnKey(property, hoverRequest);
+			} else if (property.isInValue(offset)) {
+				if (property.isProperty(FrontMatterProperty.IMAGE_PROPERTY)) {
+					// Hover on image value (ex: image: som|e/path/file)
+					return doHoverOnImageValue(property, hoverRequest);
+				}
+			}
+		}
+		return NO_HOVER;
+	}
+
+	private static CompletableFuture<Hover> doHoverOnKey(YamlProperty property, HoverRequest hoverRequest) {
+		String propertyKey = property.getKey().toString();
+		FrontMatterProperty frontMatterProperty = YamlFrontMatterSchemaProvider.getInstance().getProperty(propertyKey);
+		if (frontMatterProperty != null) {
+			boolean hasMarkdown = hoverRequest.canSupportMarkupKind(MarkupKind.MARKDOWN);
+			MarkupContent content = getDocumentation(frontMatterProperty, hasMarkdown);
+			Range range = YamlPositionUtility.createRange(property.getKey());
+			if (range != null) {
+				Hover hover = new Hover(content, range);
+				return CompletableFuture.completedFuture(hover);
+			}
+		}
+		return NO_HOVER;
+	}
+
+	private static CompletableFuture<Hover> doHoverOnImageValue(YamlProperty property, HoverRequest hoverRequest) {
+		Template template = hoverRequest.getTemplate();
+		RoqProjectExtension roq = RoqProjectExtension.getRoqProjectExtension(template);
+		if (roq != null) {
+			Path filePath = FileUtils.createPath(template.getUri());
+			String imageFilePath = ((YamlScalar) property.getValue()).getValue();
+			try {
+				Path imagePath = roq.getImagePath(filePath, imageFilePath);
+				if (imagePath != null && Files.exists(imagePath)) {
 					boolean hasMarkdown = hoverRequest.canSupportMarkupKind(MarkupKind.MARKDOWN);
-					MarkupContent content = getDocumentation(frontMatterProperty, hasMarkdown);
+					MarkupContent content = getImageDocumentation(imagePath, hasMarkdown);
 					Range range = YamlPositionUtility.createRange(property.getKey());
 					if (range != null) {
 						Hover hover = new Hover(content, range);
 						return CompletableFuture.completedFuture(hover);
 					}
 				}
+			} catch (Exception e) {
+				// Ignore error with invalid path
 			}
+
 		}
 		return NO_HOVER;
 	}

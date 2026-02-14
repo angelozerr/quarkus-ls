@@ -12,6 +12,7 @@
 package com.redhat.qute.project.extensions.roq.frontmatter;
 
 import static com.redhat.qute.project.extensions.roq.frontmatter.YamlFrontMatterDocumentationUtils.getDocumentation;
+import static com.redhat.qute.project.extensions.roq.frontmatter.YamlFrontMatterDocumentationUtils.getImageDocumentation;
 import static com.redhat.qute.services.commands.QuteClientCommandConstants.COMMAND_EDITOR_ACTION_TRIGGET_SUGGEST;
 
 import java.nio.file.Path;
@@ -107,6 +108,9 @@ public class YamlFrontMatterCompletion {
 				} else if (property.isProperty(FrontMatterProperty.PAGINATE_PROPERTY)) {
 					// completion on paginate value
 					return completionOnPaginate(property.getValue(), offset, document, template, completionSettings);
+				} else if (property.isProperty(FrontMatterProperty.IMAGE_PROPERTY)) {
+					// completion on image value
+					return completionOnImage(property.getValue(), offset, document, template, completionSettings);
 				}
 			}
 		}
@@ -248,7 +252,8 @@ public class YamlFrontMatterCompletion {
 
 	private static boolean isRetriggerCompletion(FrontMatterProperty frontMatterProperty) {
 		return frontMatterProperty.isProperty(FrontMatterProperty.LAYOUT_PROPERTY)
-				|| frontMatterProperty.isProperty(FrontMatterProperty.PAGINATE_PROPERTY);
+				|| frontMatterProperty.isProperty(FrontMatterProperty.PAGINATE_PROPERTY)
+				|| frontMatterProperty.isProperty(FrontMatterProperty.IMAGE_PROPERTY);
 	}
 
 	// Completion on layout value
@@ -265,17 +270,18 @@ public class YamlFrontMatterCompletion {
 			boolean snippetsSupported = completionSettings.isCompletionSnippetsSupported();
 
 			Path filePath = FileUtils.createPath(template.getUri());
-			roq.collectLayouts(filePath, layout -> {
-				CompletionItem item = createCompletionFile(layout, range, snippetsSupported);
+			roq.collectLayouts(filePath, (folder, layout) -> {
+				String fileName = folder.relativize(layout).toString().replace('\\', '/');
+				fileName = DataModelProject.getUriWithoutExtension(fileName);
+				CompletionItem item = createCompletionFile(fileName, range, snippetsSupported);
 				completionItems.add(item);
 			});
-
 		}
 		list.setItems(new ArrayList<>(completionItems));
 		return CompletableFuture.completedFuture(list);
 	}
 
-	// Completion on layout value
+	// Completion on paginate value
 
 	private CompletableFuture<CompletionList> completionOnPaginate(YamlNode yamlNode, int offset, YamlDocument document,
 			Template template, QuteCompletionSettings completionSettings) {
@@ -314,9 +320,9 @@ public class YamlFrontMatterCompletion {
 		return range;
 	}
 
-	private static CompletionItem createCompletionFile(Path file, Range range, boolean snippetsSupported) {
-		String fileName = DataModelProject.getUriWithoutExtension(file.getFileName().toString());
-		String label = fileName;
+	private static CompletionItem createCompletionFile(String filePath, Range range, boolean snippetsSupported) {
+
+		String label = filePath;
 		CompletionItem item = new CompletionItem();
 		item.setLabel(label);
 		item.setFilterText(label);
@@ -326,9 +332,44 @@ public class YamlFrontMatterCompletion {
 
 		item.setInsertTextFormat(snippetsSupported ? InsertTextFormat.Snippet : InsertTextFormat.PlainText);
 
-		textEdit.setNewText(fileName);
+		textEdit.setNewText(filePath);
 		item.setTextEdit(Either.forLeft(textEdit));
 		return item;
 	}
 
+	// Completion on image value
+
+	private CompletableFuture<CompletionList> completionOnImage(YamlNode propertyValue, int offset,
+			YamlDocument document, Template template, QuteCompletionSettings completionSettings) {
+		// Completion on image: |
+		Set<CompletionItem> completionItems = new HashSet<>();
+		CompletionList list = new CompletionList();
+
+		RoqProjectExtension roq = RoqProjectExtension.getRoqProjectExtension(template);
+		if (roq != null) {
+			Range range = createRange(propertyValue, offset, document);
+			boolean snippetsSupported = completionSettings.isCompletionSnippetsSupported();
+			boolean hasMarkdown = completionSettings.canSupportMarkupKind(MarkupKind.MARKDOWN);
+
+			Path templatePath = FileUtils.createPath(template.getUri());
+			roq.collectImages(templatePath, (folder, image) -> {
+				String imagePath = folder.relativize(image).toString().replace('\\', '/');
+				if (propertyValue != null && propertyValue.getKind() == YamlNodeKind.YamlScalar) {
+					String path = ((YamlScalar) propertyValue).getValue();
+					if (path.length() > 0 && path.charAt(0) == '/') {
+						imagePath = '/' + imagePath;
+					}
+				}
+				CompletionItem item = createCompletionFile(imagePath, range, snippetsSupported);
+
+				// Documentation
+				MarkupContent documentation = getImageDocumentation(image, hasMarkdown);
+				item.setDocumentation(documentation);
+
+				completionItems.add(item);
+			});
+		}
+		list.setItems(new ArrayList<>(completionItems));
+		return CompletableFuture.completedFuture(list);
+	}
 }
