@@ -32,6 +32,8 @@ import com.redhat.qute.project.roq.RoqProject;
  */
 public class RoqFrontMatterDocumentLinkTest {
 
+	// --------------- layout
+
 	@Test
 	public void layout() throws Exception {
 		String layoutUri = RoqProject.getFileUri("/templates/layouts/default.html");
@@ -64,7 +66,31 @@ public class RoqFrontMatterDocumentLinkTest {
 				"---";
 		testDocumentLinkFor(template);
 	}
-	
+
+	// --------------- image
+
+	@Test
+	public void image() throws Exception {
+		String imageUri = RoqProject.getFileUri("/public/images/ico.png");
+		String template = "---\r\n" + //
+				"image: ico.png\r\n" + //
+				"title: My title\r\n" + //
+				"---";
+		testDocumentLinkFor(template, //
+				dl(r(1, 7, 1, 14), imageUri));
+	}
+
+	@Test
+	public void invalidImage() throws Exception {
+		String imageUri = RoqProject.getFileUri("/public/images/invalid.png");
+		String template = "---\r\n" + //
+				"image: invalid.png\r\n" + //
+				"title: My title\r\n" + //
+				"---";
+		testDocumentLinkFor(template, //
+				dl(r(1, 7, 1, 18), imageUri));
+	}
+
 	private static void testDocumentLinkFor(String value, DocumentLink... expected) throws Exception {
 		DocumentLinkParameters p = new DocumentLinkParameters();
 		p.setProjectUri(RoqProject.PROJECT_URI);

@@ -50,6 +50,7 @@ import com.redhat.qute.parser.expression.Part;
 import com.redhat.qute.parser.expression.Parts;
 import com.redhat.qute.parser.expression.Parts.PartKind;
 import com.redhat.qute.parser.expression.PropertyPart;
+import com.redhat.qute.parser.injection.LanguageInjectionNode;
 import com.redhat.qute.parser.template.CaseOperator;
 import com.redhat.qute.parser.template.Expression;
 import com.redhat.qute.parser.template.JavaTypeInfoProvider;
@@ -70,7 +71,9 @@ import com.redhat.qute.parser.template.sections.LoopSection;
 import com.redhat.qute.project.JavaMemberResult;
 import com.redhat.qute.project.QuteProject;
 import com.redhat.qute.project.QuteProjectRegistry;
+import com.redhat.qute.project.datamodel.ExtendedDataModelTemplate;
 import com.redhat.qute.project.extensions.DiagnosticsParticipant;
+import com.redhat.qute.project.extensions.LanguageInjectionService;
 import com.redhat.qute.project.tags.UserTag;
 import com.redhat.qute.project.tags.UserTagParameter;
 import com.redhat.qute.services.diagnostics.CollectHtmlInputNamesVisitor;
@@ -215,6 +218,21 @@ class QuteDiagnostics {
 		List<Node> children = parent.getChildren();
 		for (Node node : children) {
 			switch (node.getKind()) {
+			case LanguageInjection: {
+				LanguageInjectionNode languageInjection = (LanguageInjectionNode) node;
+				LanguageInjectionService service = languageInjection.getLanguageService();
+				if (service != null) {
+					// Language injection, ensure data model project is loaded (ex: to get the
+					// project folder, source folders etc)
+					if (project != null) {
+						ExtendedDataModelTemplate dataModel = project.getDataModelTemplate(template).getNow(null);
+						if (dataModel != null) {
+							service.collectDiagnostics(languageInjection, template, validationSettings, diagnostics);
+						}
+					}
+				}
+				break;
+			}
 			case ParameterDeclaration: {
 				if (project != null) {
 					ParameterDeclaration parameter = (ParameterDeclaration) node;

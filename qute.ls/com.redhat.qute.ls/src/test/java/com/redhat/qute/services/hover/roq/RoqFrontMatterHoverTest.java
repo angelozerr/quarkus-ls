@@ -31,8 +31,10 @@ import com.redhat.qute.project.roq.RoqProject;
  */
 public class RoqFrontMatterHoverTest {
 
+	// --------------- layout
+
 	@Test
-	public void layout() throws Exception {
+	public void layoutKey() throws Exception {
 		String template = "---\r\n" + //
 				"lay|out: default\r\n" + //
 				"title: My title\r\n" + //
@@ -79,6 +81,30 @@ public class RoqFrontMatterHoverTest {
 	public void noHover() throws Exception {
 		String template = "---\r\n" + //
 				"fo|o: default\r\n" + //
+				"title: My title\r\n" + //
+				"---\r\n" + "";
+		assertHover(template, null, null);
+	}
+
+	// --------------- image
+
+	@Test
+	public void imageValue() throws Exception {
+		String imageUri = RoqProject.getFileUri("/public/images/ico.png");
+		String template = "---\r\n" + //
+				"image: ic|o.png\r\n" + //
+				"title: My title\r\n" + //
+				"---\r\n" + "";
+		assertHover(template, //
+				"![image](" + imageUri + ")" + //
+						System.lineSeparator(), //
+				r(1, 0, 1, 5));
+	}
+
+	@Test
+	public void invalidImageValue() throws Exception {
+		String template = "---\r\n" + //
+				"image: inv|alid.png\r\n" + //
 				"title: My title\r\n" + //
 				"---\r\n" + "";
 		assertHover(template, null, null);

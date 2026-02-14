@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.lsp4j.CompletionList;
+import org.eclipse.lsp4j.Diagnostic;
 import org.eclipse.lsp4j.DocumentLink;
 import org.eclipse.lsp4j.Hover;
 import org.eclipse.lsp4j.jsonrpc.CancelChecker;
@@ -28,6 +29,7 @@ import com.redhat.qute.services.hover.HoverRequest;
 import com.redhat.qute.settings.QuteCommandCapabilities;
 import com.redhat.qute.settings.QuteCompletionSettings;
 import com.redhat.qute.settings.QuteFormattingSettings;
+import com.redhat.qute.settings.QuteValidationSettings;
 
 /**
  * Language injection service.
@@ -89,5 +91,8 @@ public interface LanguageInjectionService {
 	 */
 	CompletableFuture<Hover> doHover(LanguageInjectionNode languageInjection, HoverRequest hoverRequest,
 			CancelChecker cancelChecker);
+
+	void collectDiagnostics(LanguageInjectionNode languageInjection, Template template,
+			QuteValidationSettings validationSettings, List<Diagnostic> diagnostics);
 
 }

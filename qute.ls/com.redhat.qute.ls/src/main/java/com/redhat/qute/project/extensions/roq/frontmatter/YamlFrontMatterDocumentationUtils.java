@@ -11,6 +11,7 @@
 *******************************************************************************/
 package com.redhat.qute.project.extensions.roq.frontmatter;
 
+import java.nio.file.Path;
 import java.util.List;
 
 import org.eclipse.lsp4j.MarkupContent;
@@ -69,6 +70,19 @@ public class YamlFrontMatterDocumentationUtils {
 					documentation.append(System.lineSeparator());
 				}
 			}
+		}
+		return DocumentationUtils.createMarkupContent(documentation, markdown);
+	}
+
+	public static MarkupContent getImageDocumentation(Path imagePath, boolean markdown) {
+		StringBuilder documentation = new StringBuilder();
+
+		// Title
+		if (markdown) {
+			documentation.append("![image](");
+			documentation.append(imagePath.toUri().toASCIIString());
+			documentation.append(")");
+			documentation.append(System.lineSeparator());
 		}
 		return DocumentationUtils.createMarkupContent(documentation, markdown);
 	}

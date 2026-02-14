@@ -22,6 +22,8 @@ public class FrontMatterProperty {
 
 	public static final String PAGINATE_PROPERTY = "paginate";
 
+	public static final String IMAGE_PROPERTY = "image";
+
 	private final String name;
 	private final String description;
 	private final String type;

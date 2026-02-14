@@ -51,18 +51,34 @@ public class YamlFrontMatterDocumentLink {
 					if (mappingChild.getKind() == YamlNodeKind.YamlProperty) {
 						YamlProperty property = (YamlProperty) mappingChild;
 						YamlNode propertyValue = property.getValue();
-						if (propertyValue != null && propertyValue.getKind() == YamlNodeKind.YamlScalar
-								&& property.isProperty(FrontMatterProperty.LAYOUT_PROPERTY)) {
-							// ex: layout: page --> page must be a link.
-							Range range = YamlPositionUtility.createRange(propertyValue);
-							if (range != null) {
-								String layoutFileName = ((YamlScalar) propertyValue).getValue();
-								if (layoutFileName.indexOf(':') == -1) {
-									// Ignore path with :theme/
+						if (propertyValue != null && propertyValue.getKind() == YamlNodeKind.YamlScalar) {
+							if (property.isProperty(FrontMatterProperty.LAYOUT_PROPERTY)) {
+								// ex: layout: page --> page must be a link.
+								Range range = YamlPositionUtility.createRange(propertyValue);
+								if (range != null) {
+									String layoutFileName = ((YamlScalar) propertyValue).getValue();
+									if (layoutFileName.indexOf(':') == -1) {
+										// Ignore path with :theme/
+										try {
+											Path layoutPath = roq.getLayoutPath(filePath, layoutFileName);
+											if (layoutPath != null) {
+												String target = layoutPath.toUri().toASCIIString();
+												links.add(new DocumentLink(range, target != null ? target : ""));
+											}
+										} catch (Exception e) {
+											// Ignore error with invalid path
+										}
+									}
+								}
+							} else if (property.isProperty(FrontMatterProperty.IMAGE_PROPERTY)) {
+								// ex: image: foo.png --> foo.png must be a link.
+								Range range = YamlPositionUtility.createRange(propertyValue);
+								if (range != null) {
+									String imageFilePath = ((YamlScalar) propertyValue).getValue();
 									try {
-										Path layoutPath = roq.getLayoutPath(filePath, layoutFileName);
-										if (layoutPath != null) {
-											String target = layoutPath.toUri().toASCIIString();
+										Path imagePath = roq.getImagePath(filePath, imageFilePath);
+										if (imagePath != null) {
+											String target = imagePath.toUri().toASCIIString();
 											links.add(new DocumentLink(range, target != null ? target : ""));
 										}
 									} catch (Exception e) {
