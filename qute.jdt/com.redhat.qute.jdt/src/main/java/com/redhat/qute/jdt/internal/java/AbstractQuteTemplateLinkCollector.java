@@ -193,13 +193,19 @@ public abstract class AbstractQuteTemplateLinkCollector extends ASTVisitor {
 			List body = node.bodyDeclarations();
 			for (Object declaration : body) {
 				if (declaration instanceof MethodDeclaration methodDeclaration) {
-					String methodName = methodDeclaration.getName().getIdentifier();
-					collectTemplateLinkForMethodOrRecord(basePath, methodDeclaration, methodName, node, ignoreFragments,
-							templateNameStrategy);
+					if (!isConstructor(methodDeclaration)) {
+						String methodName = methodDeclaration.getName().getIdentifier();
+						collectTemplateLinkForMethodOrRecord(basePath, methodDeclaration, methodName, node,
+								ignoreFragments, templateNameStrategy);
+					}
 				}
 			}
 		}
 		return super.visit(node);
+	}
+
+	private static boolean isConstructor(MethodDeclaration methodDeclaration) {
+		return methodDeclaration.getReturnType2() == null;
 	}
 
 	/**
