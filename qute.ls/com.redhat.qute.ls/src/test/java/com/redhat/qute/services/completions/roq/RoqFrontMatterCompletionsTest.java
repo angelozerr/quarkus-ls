@@ -232,7 +232,7 @@ public class RoqFrontMatterCompletionsTest {
 				c("/ico.png", "/ico.png", r(2, 7, 2, 8)));
 	}
 
-	public static void testCompletionFor(String value, CompletionItem... expectedItems) throws Exception {
+	private static void testCompletionFor(String value, CompletionItem... expectedItems) throws Exception {
 		CompletionParameters p = new CompletionParameters();
 		p.setProjectUri(RoqProject.PROJECT_URI);
 		p.setInjectionDetectors(Collections.singletonList(new YamlFrontMatterDetector()));
