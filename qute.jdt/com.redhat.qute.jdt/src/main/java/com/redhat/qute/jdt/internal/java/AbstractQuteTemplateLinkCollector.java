@@ -21,13 +21,16 @@ import static com.redhat.qute.jdt.internal.QuteJavaConstants.OLD_CHECKED_TEMPLAT
 import static com.redhat.qute.jdt.internal.QuteJavaConstants.TEMPLATE_CLASS;
 import static com.redhat.qute.jdt.internal.QuteJavaConstants.TEMPLATE_CONTENTS_ANNOTATION;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.apache.commons.lang3.StringUtils;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.ITypeRoot;
 import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.core.dom.ASTNode;
@@ -49,6 +52,8 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.VariableDeclaration;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.lsp4j.Range;
+import org.eclipse.lsp4mp.jdt.core.project.JDTMicroProfileProject;
+import org.eclipse.lsp4mp.jdt.core.project.JDTMicroProfileProjectManager;
 
 import com.redhat.qute.jdt.internal.AnnotationLocationSupport;
 import com.redhat.qute.jdt.internal.QuteJavaConstants;
@@ -76,10 +81,8 @@ public abstract class AbstractQuteTemplateLinkCollector extends ASTVisitor {
 
 	private static final Logger LOGGER = Logger.getLogger(AbstractQuteTemplateLinkCollector.class.getName());
 
-	private static String[] suffixes = { ".qute.html", ".qute.json", ".qute.txt", ".qute.yaml", ".html", ".json",
-			".txt", ".yaml" };
-
-	private static final String PREFERRED_SUFFIX = ".html"; // TODO make it configurable
+	private static String[] DEFAULT_SUFFIXES = { ".html", ".qute.html", ".qute.json", ".qute.txt", ".qute.yaml",
+			".json", ".txt", ".yaml" };
 
 	protected final ITypeRoot typeRoot;
 	protected final IJDTUtils utils;
@@ -91,11 +94,28 @@ public abstract class AbstractQuteTemplateLinkCollector extends ASTVisitor {
 
 	private CompilationUnit compilationUnit;
 
+	private final String[] suffixes;
+
 	public AbstractQuteTemplateLinkCollector(ITypeRoot typeRoot, IJDTUtils utils, IProgressMonitor monitor) {
 		this.typeRoot = typeRoot;
 		this.utils = utils;
 		this.monitor = monitor;
 		this.levelTypeDecl = 0;
+		IJavaProject javaProject = typeRoot.getJavaProject();
+		JDTMicroProfileProject mpProject = null;
+		try {
+			mpProject = JDTMicroProfileProjectManager.getInstance().getJDTMicroProfileProject(javaProject);
+		} catch (Exception e) {
+
+		}
+		String customSuffixes = mpProject != null ? mpProject.getProperty(QuteConfigConstants.QUARKUS_QUTE_SUFFIXES)
+				: null;
+		if (StringUtils.isNotBlank(customSuffixes)) {
+			this.suffixes = Arrays.stream(customSuffixes.split(",")).map(String::trim).filter(s -> !s.isEmpty())
+					.map(s -> s.startsWith(".") ? s : "." + s).toArray(String[]::new);
+		} else {
+			this.suffixes = DEFAULT_SUFFIXES;
+		}
 	}
 
 	@Override
@@ -453,14 +473,14 @@ public abstract class AbstractQuteTemplateLinkCollector extends ASTVisitor {
 			AbstractTypeDeclaration type, String className, String fieldOrMethodName, String location,
 			IFile templateFile, TemplatePathInfo templatePathInfo) throws JavaModelException;
 
-	private static IFile getTemplateFile(IProject project, String templateFilePathWithoutExtension) {
+	private IFile getTemplateFile(IProject project, String templateFilePathWithoutExtension) {
 		for (String suffix : suffixes) {
 			IFile templateFile = project.getFile(templateFilePathWithoutExtension + suffix);
 			if (templateFile.exists()) {
 				return templateFile;
 			}
 		}
-		return project.getFile(templateFilePathWithoutExtension + PREFERRED_SUFFIX);
+		return project.getFile(templateFilePathWithoutExtension + suffixes[0]);
 	}
 
 	/**
