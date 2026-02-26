@@ -65,7 +65,7 @@ public class MockQuteLanguageServer extends QuteLanguageServer {
 
 	@Override
 	protected QuteProjectRegistry createProjectRegistry() {
-		return new MockQuteProjectRegistry(this, this, this, this, this, this, this, this, //
+		return new MockQuteProjectRegistry(this, this, this, this, this, this, this, this, this, //
 				() -> null);
 	}
 

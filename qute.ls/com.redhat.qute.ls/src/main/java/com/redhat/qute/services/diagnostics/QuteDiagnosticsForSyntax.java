@@ -95,6 +95,9 @@ public class QuteDiagnosticsForSyntax {
 	}
 
 	private static void addUserTag(Collection<UserTag> tags, EngineBuilder engineBuilder) {
+		if (tags == null) {
+			return;
+		}
 		for (UserTag userTag : tags) {
 			String tagName = userTag.getName();
 			String tagTemplateId = userTag.getTemplateId();

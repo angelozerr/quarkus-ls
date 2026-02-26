@@ -126,7 +126,7 @@ public class UserTagRegistry {
 		}
 		QuteUserTagParams params = new QuteUserTagParams();
 		params.setProjectUri(project.getUri());
-		return getBinaryUserTags(params) //
+		/*return getBinaryUserTags(params) //
 				.thenApply(tagInfos -> {
 					if (tagInfos == null) {
 						return Collections.emptyList();
@@ -135,7 +135,8 @@ public class UserTagRegistry {
 							.stream() //
 							.map(info -> new BinaryUserTag(info, project)) //
 							.collect(Collectors.toList());
-				});
+				});*/
+		return CompletableFuture.completedFuture(null);
 	}
 
 	protected CompletableFuture<List<UserTagInfo>> getBinaryUserTags(QuteUserTagParams params) {

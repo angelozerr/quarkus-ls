@@ -36,6 +36,7 @@ import com.redhat.qute.commons.datamodel.DataModelTemplate;
 import com.redhat.qute.commons.datamodel.QuteDataModelProjectParams;
 import com.redhat.qute.commons.usertags.QuteUserTagParams;
 import com.redhat.qute.commons.usertags.UserTagInfo;
+import com.redhat.qute.ls.api.QuteBinaryTemplateProvider;
 import com.redhat.qute.ls.api.QuteDataModelProjectProvider;
 import com.redhat.qute.ls.api.QuteJavaDefinitionProvider;
 import com.redhat.qute.ls.api.QuteJavaTypesProvider;
@@ -61,16 +62,16 @@ public class MockQuteProjectRegistry extends QuteProjectRegistry {
 	public static final Range JAVA_STATIC_METHOD_RANGE = new Range(new Position(3, 3), new Position(3, 3));
 
 	public MockQuteProjectRegistry() {
-		this(null, null, null, null, null, null, null, null, () -> null);
+		this(null, null, null, null, null, null, null, null, null, () -> null);
 	}
 
 	public MockQuteProjectRegistry(QuteProjectInfoProvider projectInfoProvider, QuteJavaTypesProvider javaTypeProvider,
 			QuteJavaDefinitionProvider definitionProvider, QuteResolvedJavaTypeProvider resolvedClassProvider,
 			QuteDataModelProjectProvider dataModelProvider, QuteUserTagProvider userTagsProvider,
-			QuteJavadocProvider javadocProvider, TemplateValidator validator,
-			Supplier<ProgressSupport> progressSupportProvider) {
+			QuteBinaryTemplateProvider binaryTemplateProvider, QuteJavadocProvider javadocProvider,
+			TemplateValidator validator, Supplier<ProgressSupport> progressSupportProvider) {
 		super(projectInfoProvider, javaTypeProvider, definitionProvider, resolvedClassProvider, dataModelProvider,
-				userTagsProvider, javadocProvider, validator, progressSupportProvider);
+				userTagsProvider, binaryTemplateProvider, javadocProvider, validator, progressSupportProvider);
 		super.setAsyncValidation(false);
 		super.setDidChangeWatchedFilesSupported(true);
 	}

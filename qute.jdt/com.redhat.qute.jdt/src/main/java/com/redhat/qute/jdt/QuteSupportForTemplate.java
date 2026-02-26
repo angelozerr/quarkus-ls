@@ -63,6 +63,9 @@ import com.redhat.qute.commons.QuteJavadocParams;
 import com.redhat.qute.commons.QuteProjectParams;
 import com.redhat.qute.commons.QuteResolvedJavaTypeParams;
 import com.redhat.qute.commons.ResolvedJavaTypeInfo;
+import com.redhat.qute.commons.binary.BinaryTemplate;
+import com.redhat.qute.commons.binary.BinaryTemplateInfo;
+import com.redhat.qute.commons.binary.QuteBinaryTemplateParams;
 import com.redhat.qute.commons.datamodel.DataModelParameter;
 import com.redhat.qute.commons.datamodel.DataModelProject;
 import com.redhat.qute.commons.datamodel.DataModelTemplate;
@@ -191,6 +194,27 @@ public class QuteSupportForTemplate {
 		return QuarkusIntegrationForQute.getUserTags(javaProject, monitor);
 	}
 
+	/**
+	 * Collect binary templates from the given project Uri.
+	 *
+	 * @param params  the project uri.
+	 * @param utils   JDT LS utilities
+	 * @param monitor the progress monitor
+	 *
+	 * @return binary templates from the given project Uri.
+	 *
+	 * @throws CoreException
+	 */
+	public List<BinaryTemplateInfo> getBinaryTemplates(QuteBinaryTemplateParams params, IJDTUtils utils, IProgressMonitor monitor)
+			throws CoreException {
+		String projectUri = params.getProjectUri();
+		IJavaProject javaProject = getJavaProjectFromProjectUri(projectUri);
+		if (javaProject == null) {
+			return null;
+		}
+		return QuarkusIntegrationForQute.getBinaryTemplates(javaProject, monitor);
+	}
+	
 	/**
 	 * Returns Java types for the given pattern which belong to the given project
 	 * Uri.

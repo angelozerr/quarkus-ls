@@ -45,6 +45,9 @@ import com.redhat.qute.commons.QuteJavadocParams;
 import com.redhat.qute.commons.QuteProjectParams;
 import com.redhat.qute.commons.QuteResolvedJavaTypeParams;
 import com.redhat.qute.commons.ResolvedJavaTypeInfo;
+import com.redhat.qute.commons.binary.BinaryTemplate;
+import com.redhat.qute.commons.binary.BinaryTemplateInfo;
+import com.redhat.qute.commons.binary.QuteBinaryTemplateParams;
 import com.redhat.qute.commons.datamodel.DataModelParameter;
 import com.redhat.qute.commons.datamodel.DataModelProject;
 import com.redhat.qute.commons.datamodel.DataModelTemplate;
@@ -52,6 +55,7 @@ import com.redhat.qute.commons.datamodel.JavaDataModelChangeEvent;
 import com.redhat.qute.commons.datamodel.QuteDataModelProjectParams;
 import com.redhat.qute.commons.usertags.QuteUserTagParams;
 import com.redhat.qute.commons.usertags.UserTagInfo;
+import com.redhat.qute.ls.api.QuteBinaryTemplateProvider;
 import com.redhat.qute.ls.api.QuteDataModelProjectProvider;
 import com.redhat.qute.ls.api.QuteJavaDefinitionProvider;
 import com.redhat.qute.ls.api.QuteJavaTypesProvider;
@@ -87,7 +91,7 @@ import com.redhat.qute.settings.capabilities.ServerCapabilitiesInitializer;
  */
 public class QuteLanguageServer implements LanguageServer, ProcessLanguageServer, QuteLanguageServerAPI,
 		QuteProjectInfoProvider, QuteJavaTypesProvider, QuteResolvedJavaTypeProvider, QuteJavaDefinitionProvider,
-		QuteDataModelProjectProvider, QuteUserTagProvider, QuteJavadocProvider,
+		QuteDataModelProjectProvider, QuteUserTagProvider, QuteBinaryTemplateProvider, QuteJavadocProvider,
 		QuteTemplateProvider, TemplateValidator, ProgressSupport, TelemetrySupport {
 
 	private static final Logger LOGGER = Logger.getLogger(QuteLanguageServer.class.getName());
@@ -117,9 +121,8 @@ public class QuteLanguageServer implements LanguageServer, ProcessLanguageServer
 	}
 
 	protected QuteProjectRegistry createProjectRegistry() {
-		return new QuteProjectRegistry(this, this, this, this, this, this, this, this, //
-				() -> capabilityManager.getClientCapabilities()
-						.isWorkDoneProgressSupported() ? this : null);
+		return new QuteProjectRegistry(this, this, this, this, this, this, this, this, this, //
+				() -> capabilityManager.getClientCapabilities().isWorkDoneProgressSupported() ? this : null);
 	}
 
 	@Override
@@ -166,13 +169,12 @@ public class QuteLanguageServer implements LanguageServer, ProcessLanguageServer
 	 * Try to load the Qute project for each workspace folder.
 	 */
 	private void loadQuteProjects() {
-		getLanguageClient().getProjects()
-				.thenAccept(projects -> {
-					if (projects != null && !projects.isEmpty()) {
-						// There are some Qute projects in the workspace, load them
-						projectRegistry.loadQuteProjects(projects);
-					}
-				});
+		getLanguageClient().getProjects().thenAccept(projects -> {
+			if (projects != null && !projects.isEmpty()) {
+				// There are some Qute projects in the workspace, load them
+				projectRegistry.loadQuteProjects(projects);
+			}
+		});
 	}
 
 	/**
@@ -327,6 +329,11 @@ public class QuteLanguageServer implements LanguageServer, ProcessLanguageServer
 	@Override
 	public CompletableFuture<List<UserTagInfo>> getUserTags(QuteUserTagParams params) {
 		return getLanguageClient().getUserTags(params);
+	}
+
+	@Override
+	public CompletableFuture<List<BinaryTemplateInfo>> getBinaryTemplates(QuteBinaryTemplateParams params) {
+		return getLanguageClient().getBinaryTemplates(params);
 	}
 
 	public void didChangeWatchedFiles(DidChangeWatchedFilesParams params) {

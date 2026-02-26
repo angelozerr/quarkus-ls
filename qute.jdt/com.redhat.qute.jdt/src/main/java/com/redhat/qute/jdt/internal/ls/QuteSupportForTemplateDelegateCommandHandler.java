@@ -33,6 +33,9 @@ import com.redhat.qute.commons.DocumentFormat;
 import com.redhat.qute.commons.FileUtils;
 import com.redhat.qute.commons.GenerateMissingJavaMemberParams;
 import com.redhat.qute.commons.GenerateMissingJavaMemberParams.MemberType;
+import com.redhat.qute.commons.binary.BinaryTemplate;
+import com.redhat.qute.commons.binary.BinaryTemplateInfo;
+import com.redhat.qute.commons.binary.QuteBinaryTemplateParams;
 import com.redhat.qute.commons.JavaTypeInfo;
 import com.redhat.qute.commons.ProjectInfo;
 import com.redhat.qute.commons.QuteJavaDefinitionParams;
@@ -84,6 +87,8 @@ public class QuteSupportForTemplateDelegateCommandHandler extends AbstractQuteDe
 
 	private static final String QUTE_TEMPLATE_USER_TAGS_COMMAND_ID = "qute/template/userTags";
 
+	private static final String QUTE_TEMPLATE_BINARY_TEMPLATES_COMMAND_ID = "qute/template/binaryTemplates";
+
 	private static final String QUTE_TEMPLATE_JAVA_TYPES_COMMAND_ID = "qute/template/javaTypes";
 
 	private static final String QUTE_TEMPLATE_JAVA_DEFINITION_COMMAND_ID = "qute/template/javaDefinition";
@@ -107,6 +112,8 @@ public class QuteSupportForTemplateDelegateCommandHandler extends AbstractQuteDe
 			return getProjectDataModel(arguments, commandId, monitor);
 		case QUTE_TEMPLATE_USER_TAGS_COMMAND_ID:
 			return getUserTags(arguments, commandId, monitor);
+		case QUTE_TEMPLATE_BINARY_TEMPLATES_COMMAND_ID:
+			return getBinaryTemplates(arguments, commandId, monitor);
 		case QUTE_TEMPLATE_JAVA_TYPES_COMMAND_ID:
 			return getJavaTypes(arguments, commandId, monitor);
 		case QUTE_TEMPLATE_RESOLVED_JAVA_TYPE_COMMAND_ID:
@@ -223,6 +230,27 @@ public class QuteSupportForTemplateDelegateCommandHandler extends AbstractQuteDe
 					.format("Command '%s' must be called with required QuteUserTagParams.projectUri!", commandId));
 		}
 		return new QuteUserTagParams(projectUri);
+	}
+
+	private static List<BinaryTemplateInfo> getBinaryTemplates(List<Object> arguments, String commandId,
+			IProgressMonitor monitor) throws CoreException {
+		QuteBinaryTemplateParams params = createBinaryTemplateParams(arguments, commandId);
+		return QuteSupportForTemplate.getInstance().getBinaryTemplates(params, JDTUtilsLSImpl.getInstance(), monitor);
+	}
+
+	private static QuteBinaryTemplateParams createBinaryTemplateParams(List<Object> arguments, String commandId) {
+		Map<String, Object> obj = getFirst(arguments);
+		if (obj == null) {
+			throw new UnsupportedOperationException(
+					String.format("Command '%s' must be called with one QuteBinaryTemplateParams argument!", commandId));
+		}
+		// Get project name from the java file URI
+		String projectUri = getString(obj, PROJECT_URI_ATTR);
+		if (projectUri == null) {
+			throw new UnsupportedOperationException(String
+					.format("Command '%s' must be called with required QuteBinaryTemplateParams.projectUri!", commandId));
+		}
+		return new QuteBinaryTemplateParams(projectUri);
 	}
 
 	/**

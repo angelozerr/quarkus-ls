@@ -48,6 +48,9 @@ import com.redhat.qute.commons.QuteJavadocParams;
 import com.redhat.qute.commons.ResolvedJavaTypeInfo;
 import com.redhat.qute.commons.TemplateRootPath;
 import com.redhat.qute.commons.annotations.TemplateDataAnnotation;
+import com.redhat.qute.commons.binary.BinaryTemplate;
+import com.redhat.qute.commons.binary.BinaryTemplateInfo;
+import com.redhat.qute.commons.binary.QuteBinaryTemplateParams;
 import com.redhat.qute.commons.datamodel.DataModelParameter;
 import com.redhat.qute.commons.datamodel.DataModelProject;
 import com.redhat.qute.commons.datamodel.DataModelTemplate;
@@ -71,6 +74,7 @@ import com.redhat.qute.project.datamodel.resolvers.MessageValueResolver;
 import com.redhat.qute.project.datamodel.resolvers.MethodValueResolver;
 import com.redhat.qute.project.datamodel.resolvers.TypeValueResolver;
 import com.redhat.qute.project.datamodel.resolvers.ValueResolver;
+import com.redhat.qute.project.documents.QuteBinaryTextDocument;
 import com.redhat.qute.project.documents.QuteClosedTextDocuments;
 import com.redhat.qute.project.documents.SearchInfoQuery;
 import com.redhat.qute.project.documents.TemplateValidator;
@@ -127,11 +131,16 @@ public class QuteProject {
 	private final QuteClosedTextDocuments closedDocuments;
 
 	// Map which stores opened/closed documents identified by template id.
-	private final Map<String /* template id */, QuteTextDocument> allDocumentsByTemplateId;
+	private final Map<String /* template id */, QuteTextDocument> sourceDocumentsByTemplateId;
+
+	// Map which stores binary template documents identified by template id.
+	private final Map<String /* template id */, QuteTextDocument> binaryDocumentsByTemplateId;
 
 	private final Map<String /* Full qualified name of Java class */, CompletableFuture<ResolvedJavaTypeInfo>> resolvedJavaTypes;
 
 	private Map<String /* Full qualified name of Java class */, JavaTypeAccessibiltyRule> targetAnnotations;
+
+	private CompletableFuture<List<BinaryTemplateInfo>> binaryTemplatesFuture;
 
 	private CompletableFuture<ExtendedDataModelProject> dataModelProjectFuture;
 
@@ -169,8 +178,9 @@ public class QuteProject {
 		this.templateRootPaths = projectInfo.getTemplateRootPaths();
 		this.sourcePaths = toSourcePaths(projectInfo.getSourceFolders());
 		this.projectFeatures = projectInfo.getFeatures();
-		this.allDocumentsByTemplateId = new HashMap<>();
-		this.closedDocuments = new QuteClosedTextDocuments(this, allDocumentsByTemplateId);
+		this.sourceDocumentsByTemplateId = new HashMap<>();
+		this.binaryDocumentsByTemplateId = new HashMap<>();
+		this.closedDocuments = new QuteClosedTextDocuments(this, sourceDocumentsByTemplateId);
 		this.projectRegistry = projectRegistry;
 		this.resolvedJavaTypes = new HashMap<>();
 		this.tagRegistry = new UserTagRegistry(this, templateRootPaths, projectRegistry);
@@ -258,7 +268,7 @@ public class QuteProject {
 			// Load closed document if needed and validate all closed documents when data
 			// model is ready.
 			closedDocuments.loadClosedTemplatesIfNeeded(progressContext);
-			for (QuteTextDocument document : allDocumentsByTemplateId.values()) {
+			for (QuteTextDocument document : sourceDocumentsByTemplateId.values()) {
 				if (!document.isOpened()) {
 					validator.triggerValidationFor(document);
 				}
@@ -386,29 +396,44 @@ public class QuteProject {
 	public List<Section> findSectionsByTag(String tag) {
 		closedDocuments.loadClosedTemplatesIfNeeded();
 		List<Section> allSections = new ArrayList<>();
-		for (QuteTextDocument document : allDocumentsByTemplateId.values()) {
+		// from sources
+		fillSection(tag, sourceDocumentsByTemplateId.values(), allSections);
+		// from binary (JARs)
+		fillSection(tag, binaryDocumentsByTemplateId.values(), allSections);
+		return allSections;
+	}
+
+	private void fillSection(String tag, Collection<QuteTextDocument> documents, List<Section> allSections) {
+		for (QuteTextDocument document : documents) {
 			List<Section> sections = document.findSectionsByTag(tag);
 			if (sections != null && !sections.isEmpty()) {
 				allSections.addAll(sections);
 			}
 		}
-		return allSections;
 	}
 
 	private QuteTextDocument findDocumentByTemplateId(String templateId) {
 		if (templateId.indexOf('.') != -1) {
 			// ex: base.html
-			return allDocumentsByTemplateId.get(templateId);
-		}
-		// ex : base
-		for (String variant : getTemplateVariants()) {
-			String id = templateId + variant;
-			QuteTextDocument document = allDocumentsByTemplateId.get(id);
+			QuteTextDocument document = sourceDocumentsByTemplateId.get(templateId);
 			if (document != null) {
 				return document;
 			}
+			return binaryDocumentsByTemplateId.get(templateId);
 		}
-		return null;
+		// ex : base
+		QuteTextDocument binaryDocument = null;
+		for (String variant : getTemplateVariants()) {
+			String id = templateId + variant;
+			QuteTextDocument document = sourceDocumentsByTemplateId.get(id);
+			if (document != null) {
+				return document;
+			}
+			if (binaryDocument == null) {
+				binaryDocument = binaryDocumentsByTemplateId.get(id);
+			}
+		}
+		return binaryDocument;
 	}
 
 	/**
@@ -417,7 +442,7 @@ public class QuteProject {
 	 * @param document the Qute template.
 	 */
 	public void onDidOpenTextDocument(QuteTextDocument document) {
-		allDocumentsByTemplateId.put(document.getTemplateId(), document);
+		sourceDocumentsByTemplateId.put(document.getTemplateId(), document);
 	}
 
 	/**
@@ -456,8 +481,8 @@ public class QuteProject {
 
 	private QuteTextDocument removeDocumentFromCache(Path templateFilePath) {
 		String templateId = getTemplateId(templateFilePath);
-		synchronized (allDocumentsByTemplateId) {
-			return allDocumentsByTemplateId.remove(templateId);
+		synchronized (sourceDocumentsByTemplateId) {
+			return sourceDocumentsByTemplateId.remove(templateId);
 		}
 	}
 
@@ -477,7 +502,7 @@ public class QuteProject {
 	 */
 	public Collection<QuteTextDocument> getDocuments() {
 		closedDocuments.loadClosedTemplatesIfNeeded();
-		return allDocumentsByTemplateId.values();
+		return sourceDocumentsByTemplateId.values();
 	}
 
 	public CompletableFuture<ResolvedJavaTypeInfo> getResolvedJavaType(String typeName) {
@@ -494,6 +519,28 @@ public class QuteProject {
 					}
 					return c;
 				});
+	}
+
+	public CompletableFuture<List<BinaryTemplateInfo>> getBinaryTemplates() {
+		if (binaryTemplatesFuture == null || binaryTemplatesFuture.isCancelled()
+				|| binaryTemplatesFuture.isCompletedExceptionally()) {
+			binaryTemplatesFuture = null;
+			binaryTemplatesFuture = loadBinaryTemplates();
+		}
+		return binaryTemplatesFuture;
+	}
+
+	protected synchronized CompletableFuture<List<BinaryTemplateInfo>> loadBinaryTemplates() {
+		if (binaryTemplatesFuture != null) {
+			return binaryTemplatesFuture;
+		}
+		QuteBinaryTemplateParams params = new QuteBinaryTemplateParams();
+		params.setProjectUri(getUri());
+		return getBinaryTemplates(params);
+	}
+
+	protected CompletableFuture<List<BinaryTemplateInfo>> getBinaryTemplates(QuteBinaryTemplateParams params) {
+		return projectRegistry.getBinaryTemplates(params);
 	}
 
 	public CompletableFuture<ExtendedDataModelProject> getDataModelProject() {
@@ -603,6 +650,9 @@ public class QuteProject {
 		}
 		// Binary tags
 		tags = getBinaryUserTags().getNow(Collections.emptyList());
+		if (tags == null) {
+			return null;
+		}
 		for (UserTag userTag : tags) {
 			if (tagName.equals(userTag.getName())) {
 				return userTag;
@@ -1801,5 +1851,22 @@ public class QuteProject {
 			return allInjectors != null ? allInjectors : Collections.emptyList();
 		}
 		return Collections.emptyList();
+	}
+
+	void registerBinaryTemplates(List<BinaryTemplateInfo> binaryTemplates) {
+		for (BinaryTemplateInfo binaryTemplate : binaryTemplates) {
+			Map<String, String> properties = binaryTemplate.getProperties();
+			List<BinaryTemplate> templates = binaryTemplate.getTemplates();
+			for (BinaryTemplate template : templates) {
+				QuteBinaryTextDocument document = new QuteBinaryTextDocument(template, uri, properties, this);
+				binaryDocumentsByTemplateId.put(document.getTemplateId(), document);
+			}
+		}
+
+	}
+
+	public String getBinaryTemplateUriById(String templateId) {
+		QuteTextDocument document = findDocumentByTemplateId(templateId);
+		return document != null ? document.getUri() : null;
 	}
 }

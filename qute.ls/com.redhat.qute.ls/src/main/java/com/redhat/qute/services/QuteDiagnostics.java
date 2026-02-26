@@ -17,8 +17,6 @@ import static com.redhat.qute.services.diagnostics.DiagnosticDataFactory.createD
 import static com.redhat.qute.utils.UserTagUtils.IT_OBJECT_PART_NAME;
 import static com.redhat.qute.utils.UserTagUtils.NESTED_CONTENT_OBJECT_PART_NAME;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -68,6 +66,7 @@ import com.redhat.qute.parser.template.Template;
 import com.redhat.qute.parser.template.sections.CaseSection;
 import com.redhat.qute.parser.template.sections.IncludeSection;
 import com.redhat.qute.parser.template.sections.LoopSection;
+import com.redhat.qute.parser.template.sections.TemplatePath;
 import com.redhat.qute.project.JavaMemberResult;
 import com.redhat.qute.project.QuteProject;
 import com.redhat.qute.project.QuteProjectRegistry;
@@ -535,8 +534,8 @@ class QuteDiagnostics {
 			if (project != null) {
 				// include defines a template to include
 				// ex : {#include base}
-				Path templateFile = includeSection.getReferencedTemplateFile();
-				if (templateFile == null || Files.notExists(templateFile)) {
+				TemplatePath templateFile = includeSection.getReferencedTemplatePath();
+				if (templateFile == null || !templateFile.isValid()) {
 					// It doesn't exists a file named base, base.qute.html, base.html, etc
 					Range range = QutePositionUtility.createRange(templateParameter);
 					Diagnostic diagnostic = createDiagnostic(range, DiagnosticSeverity.Error,
