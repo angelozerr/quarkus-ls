@@ -70,9 +70,8 @@ public class QuteOpenedTextDocument extends ModelTextDocument<Template> implemen
 		var template = super.getModel();
 		if (template != null && template.getProjectUri() == null) {
 			template.setTemplateInfoProvider(this);
-			ProjectInfo projectInfo = getProjectInfoFuture().getNow(null);
-			if (projectInfo != null) {
-				QuteProject project = projectRegistry.getProject(projectInfo);
+			QuteProject project = findProject();
+			if (project != null) {
 				template.setProjectUri(project.getUri());
 				template.setTemplateId(templateId);
 				processCallVisitor(super.getModel(), project);
@@ -80,6 +79,14 @@ public class QuteOpenedTextDocument extends ModelTextDocument<Template> implemen
 			template.setProjectRegistry(projectRegistry);
 		}
 		return template;
+	}
+
+	private QuteProject findProject() {
+		if (this.projectUri != null) {
+			return projectRegistry.getProject(projectUri);
+		}
+		ProjectInfo projectInfo = getProjectInfoFuture().getNow(null);
+		return projectInfo != null ? projectRegistry.getProject(projectInfo) : null;
 	}
 
 	@Override
