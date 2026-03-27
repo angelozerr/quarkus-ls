@@ -52,6 +52,7 @@ public class ExpressionParser {
 		String text = template.getText();
 		int start = expression.getStartContentOffset();
 		int end = expression.getEndContentOffset();
+		String s = text.substring(start,  end);
 		ExpressionScanner scanner = ExpressionScanner.createScanner(text, canSupportInfixNotation, start, end);
 		TokenType token = scanner.scan();
 		List<Node> expressionContent = new ArrayList<>();

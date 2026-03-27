@@ -118,6 +118,17 @@ public class ParameterScanner extends AbstractScanner<TokenType, ScannerState> {
 				return finishToken(offset, TokenType.ParameterValue);
 			}
 
+			if (c == '(') {
+				// Value starts with '('
+				// ex: {#let dialogId = (extDialogId ? extDialogId : str:concat('form-dlg-',
+				// title))}
+				adjustPositionWithComma();
+				if (stream.peekChar(-1) == ')') {
+					//stream.advance(-2);
+				}
+				return finishToken(offset, TokenType.ParameterValue);
+			}
+
 			if (hasNextParameterNameOrValue()) {
 				adjustPositionWithComma();
 				state = ScannerState.WithinParameters;

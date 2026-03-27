@@ -36,6 +36,10 @@ public class ExpressionParameter extends Expression {
 	// name=EXPRESSION_PARAMETER})
 	private final Section ownerSection;
 
+	private boolean canSupportInfixNotation = false;;
+	private int startContentOffset = -1;
+	private int endContentOffset = -1;
+
 	ExpressionParameter(int start, int end, Section ownerSection) {
 		super(start, end);
 		this.ownerSection = ownerSection;
@@ -59,7 +63,29 @@ public class ExpressionParameter extends Expression {
 
 	@Override
 	public boolean canSupportInfixNotation() {
-		return false;
+		updateIfNeeded();
+		return canSupportInfixNotation;
+	}
+
+	private void updateIfNeeded() {
+		if (startContentOffset != -1) {
+			return;
+		}
+
+		startContentOffset = super.getStart();
+		endContentOffset = super.getEnd();
+		canSupportInfixNotation = false;
+
+		String text = getOwnerTemplate().getText();
+		char c = text.charAt(getStart());
+		if (c == '(') {
+			startContentOffset++;
+			if (text.charAt(getEnd() - 1) == ')') {
+				endContentOffset = endContentOffset - 1;
+			}
+			canSupportInfixNotation = true;
+		}
+
 	}
 
 	/**
@@ -90,14 +116,16 @@ public class ExpressionParameter extends Expression {
 	public Section getOwnerSection() {
 		return ownerSection;
 	}
-	
+
 	@Override
 	public int getStartContentOffset() {
-		return super.getStart();
+		updateIfNeeded();
+		return startContentOffset;
 	}
-	
+
 	@Override
 	public int getEndContentOffset() {
-		return super.getEnd();
+		updateIfNeeded();
+		return endContentOffset;
 	}
 }

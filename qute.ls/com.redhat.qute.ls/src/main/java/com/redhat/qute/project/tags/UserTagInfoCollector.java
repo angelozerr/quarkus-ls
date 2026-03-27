@@ -29,6 +29,8 @@ import com.redhat.qute.parser.expression.Parts.PartKind;
 import com.redhat.qute.parser.template.ASTVisitor;
 import com.redhat.qute.parser.template.Expression;
 import com.redhat.qute.parser.template.LiteralSupport;
+import com.redhat.qute.parser.template.Node;
+import com.redhat.qute.parser.template.NodeKind;
 import com.redhat.qute.parser.template.Parameter;
 import com.redhat.qute.parser.template.ParameterDeclaration;
 import com.redhat.qute.parser.template.Section;
@@ -184,6 +186,16 @@ public class UserTagInfoCollector extends ASTVisitor {
 					declaredParameterNames = new ArrayList<>();
 				}
 				declaredParameterNames.add(new ParamInfo(name, true, defaultValue));
+				
+				Expression expression = parameter.getJavaTypeExpression();
+				if (expression != null) {
+					for (Node expressionChild : expression.getExpressionContent()) {
+						if (expressionChild.getKind() == NodeKind.ExpressionParts) {
+							Parts parts = (Parts) expressionChild;
+							System.err.println(parts);
+						}
+					}
+				}
 			}
 		}
 		parameterNamesStack.add(declaredParameterNames != null ? declaredParameterNames : Collections.emptyList());

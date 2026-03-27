@@ -12,7 +12,9 @@
 package com.redhat.qute.project.tags;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
@@ -25,6 +27,8 @@ import com.redhat.qute.parser.template.TemplateParser;
  */
 public class UserTagInfoCollectorTest {
 
+	// Object part parameter
+
 	@Test
 	public void paramFromObjectPart() {
 		assertUserTagParameter("{foo}", //
@@ -35,6 +39,124 @@ public class UserTagInfoCollectorTest {
 	public void optionalParamFromObjectPart() {
 		assertUserTagParameter("{foo??}", //
 				p("foo", false));
+	}
+
+	// -------------------- Ignore parameters
+
+	@Test
+	public void ignoreParametersFromNamespacePart() {
+		assertUserTagParameter("{uri:Login}");
+	}
+
+	@Test
+	public void ignoreParametersFromForSectionItem() {
+		assertUserTagParameter("{#for item in items}\r\n" + //
+				"    {item}\r\n" + //
+				"{/for}", //
+				p("items", true)); // <-- item is ignored
+	}
+
+	@Test
+	public void ignoreParametersLiteral() {
+		assertUserTagParameter("{123}");
+		assertUserTagParameter("{123d}");
+		assertUserTagParameter("{true}");
+		assertUserTagParameter("{false}");
+	}
+
+	// -------------------- If section (optional parameters)
+
+	@Test
+	public void requiredParamFromIfSection() {
+		assertUserTagParameter("{#if foo}Hello{/if}", //
+				p("foo", true)); // <-- foo is required because no ??
+	}
+
+	@Test
+	public void optionalParamFromIfSection() {
+		assertUserTagParameter("{#if foo??}Hello{/if}", //
+				p("foo", false)); // <-- foo is optional because of ??
+	}
+
+	@Test
+	public void optionalParamFromIfSectionWithElse() {
+		assertUserTagParameter("{#if foo??}Hello{#else}World{/if}", //
+				p("foo", false)); // <-- foo is optional because of ??
+	}
+
+	// -------------------- Let/Set section
+
+	@Test
+	public void ignoreParamFromLetSection() {
+		assertUserTagParameter("{#let foo='bar'}\n" + //
+				"    {foo}\n" + //
+				"{/let}"); // <-- foo is ignored, it's a local variable
+	}
+
+	@Test
+	public void ignoreParamFromSetSection() {
+		assertUserTagParameter("{#set foo='bar'}\n" + //
+				"    {foo}\n" + //
+				"{/set}"); // <-- foo is ignored, it's a local variable
+	}
+
+	@Test
+	public void optionalParamFromLetSectionWithDefaultValue() {
+		assertUserTagParameter("{#let foo?='bar'}\n" + //
+				"    {foo}\n" + //
+				"{/let}", //
+				p("foo", false, "'bar'")); // <-- foo is optional with default value
+	}
+
+	@Test
+	public void paramFromLetSectionWithTernaryExpression() {
+		assertUserTagParameter("{#let dialogId = (extDialogId ? extDialogId : str:concat('form-dlg-', title))}", //
+				p("extDialogId", false), // <-- optional because of ?:
+				p("title", true)); // <-- required
+		// dialogId is ignored, it's a local variable
+	}
+
+	// -------------------- Or operator (?:)
+
+	@Test
+	public void optionalParamFromOrOperator() {
+		assertUserTagParameter("{foo ?: 'default'}", //
+				p("foo", false));
+	}
+
+	// -------------------- Multiple parameters
+
+	@Test
+	public void multipleParams() {
+		assertUserTagParameter("{foo} {bar}", //
+				p("foo", true), //
+				p("bar", true));
+	}
+
+	@Test
+	public void multipleParamsMixedRequiredAndOptional() {
+		assertUserTagParameter("{foo} {bar??}", //
+				p("foo", true), //
+				p("bar", false));
+	}
+
+	// -------------------- _args
+
+	@Test
+	public void hasArgs() {
+		Template template = TemplateParser.parse("{_args.skip('readonly')}", "test.qute");
+		UserTagInfoCollector collector = new UserTagInfoCollector(null);
+		template.accept(collector);
+		assertTrue(collector.hasArgs());
+		assertEquals(0, collector.getParameters().size());
+	}
+
+	@Test
+	public void noArgs() {
+		Template template = TemplateParser.parse("{foo}", "test.qute");
+		UserTagInfoCollector collector = new UserTagInfoCollector(null);
+		template.accept(collector);
+		assertFalse(collector.hasArgs());
 	}
 
 	private static void assertUserTagParameter(String content, UserTagParameter... expected) {
