@@ -41,6 +41,7 @@ import com.redhat.qute.project.QuteProject;
 import com.redhat.qute.project.QuteProjectRegistry;
 import com.redhat.qute.project.datamodel.ExtendedDataModelTemplate;
 import com.redhat.qute.project.extensions.LanguageInjectionService;
+import com.redhat.qute.services.completions.CompletionData;
 import com.redhat.qute.services.completions.CompletionRequest;
 import com.redhat.qute.services.completions.QuteCompletionForTemplateIds;
 import com.redhat.qute.services.completions.QuteCompletionsForExpression;
@@ -52,6 +53,7 @@ import com.redhat.qute.settings.QuteCommandCapabilities;
 import com.redhat.qute.settings.QuteCompletionSettings;
 import com.redhat.qute.settings.QuteFormattingSettings;
 import com.redhat.qute.settings.QuteNativeSettings;
+import com.redhat.qute.settings.SharedSettings;
 
 /**
  * The Qute completions
@@ -281,6 +283,11 @@ public class QuteCompletions {
 		CompletionList list = new CompletionList();
 		list.setItems(completionItems.stream().collect(Collectors.toList()));
 		return CompletableFuture.completedFuture(list);
+	}
+
+	public CompletableFuture<CompletionItem> resolveCompletionItem(CompletionItem unresolved, CompletionData data,
+			Template template, SharedSettings sharedSettings, CancelChecker cancelChecker) {
+		return CompletableFuture.completedFuture(unresolved);
 	}
 
 }
