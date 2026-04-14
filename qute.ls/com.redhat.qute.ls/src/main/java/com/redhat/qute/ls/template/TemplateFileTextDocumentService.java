@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 import org.eclipse.lsp4j.CodeAction;
@@ -89,6 +90,8 @@ import com.redhat.qute.utils.QutePositionUtility;
  */
 public class TemplateFileTextDocumentService extends AbstractTextDocumentService
 		implements QuteTemplateProvider, TemplateValidator {
+
+	private static final Logger LOGGER = Logger.getLogger(TemplateFileTextDocumentService.class.getName());
 
 	private static final String JDT_SCHEME = "jdt:";
 	private static final String JAR_SCHEME = "jar:";
@@ -463,6 +466,9 @@ public class TemplateFileTextDocumentService extends AbstractTextDocumentService
 	public void triggerValidationFor(QuteTextDocument document) {
 		var template = document.getTemplate();
 
+		// Capture the document version at validation start
+		int documentVersion = document.getVersion();
+
 		// Collect diagnostics
 		ResolvingJavaTypeContext resolvingJavaTypeContext = new ResolvingJavaTypeContext(template);
 		List<Diagnostic> diagnostics = getQuteLanguageService().doDiagnostics(template,
@@ -485,9 +491,20 @@ public class TemplateFileTextDocumentService extends AbstractTextDocumentService
 			// retrigger the validation.
 			CompletableFuture<Void> allFutures = CompletableFuture
 					.allOf(resolvingJavaTypeContext.toArray(new CompletableFuture[resolvingJavaTypeContext.size()]));
-			allFutures.thenAccept(Void -> {
-				triggerValidationFor(document);
-			});
+			allFutures //
+					.thenAccept(Void -> {
+						// Only re-trigger if document hasn't changed
+						if (document.getVersion() == documentVersion) {
+							triggerValidationFor(document);
+						}
+					})
+					.exceptionally(e -> {
+						// Only re-trigger if document hasn't changed
+						if (document.getVersion() == documentVersion) {
+							triggerValidationFor(document);
+						}
+						return null;
+					});
 		}
 	}
 

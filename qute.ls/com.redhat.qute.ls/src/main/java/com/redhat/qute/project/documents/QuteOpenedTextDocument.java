@@ -322,4 +322,8 @@ public class QuteOpenedTextDocument extends ModelTextDocument<Template> implemen
 		return userTagName;
 	}
 
+	@Override
+	public int getVersion() {
+		return super.getVersion();
+	}
 }

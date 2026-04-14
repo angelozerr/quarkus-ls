@@ -124,7 +124,7 @@ public abstract class QuteReadOnlyTextDocument implements QuteTextDocument {
 		}
 		return userTag;
 	}
-	
+
 	public String getUserTagName() {
 		if (userTagName == null) {
 			userTagName = QuteTextDocument.super.getUserTagName();
@@ -249,4 +249,8 @@ public abstract class QuteReadOnlyTextDocument implements QuteTextDocument {
 		cache.put((Key<Object>) key, data);
 	}
 
+	@Override
+	public int getVersion() {
+		return 0;
+	}
 }

@@ -200,4 +200,6 @@ public interface QuteTextDocument {
 	<T> T getUserData(Key<T> key);
 
 	<T> void putUserData(Key<T> key, T data);
+
+	int getVersion();
 }

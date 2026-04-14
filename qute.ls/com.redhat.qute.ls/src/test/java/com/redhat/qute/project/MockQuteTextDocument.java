@@ -203,4 +203,8 @@ public class MockQuteTextDocument implements QuteTextDocument {
 
 	}
 
+	@Override
+	public int getVersion() {
+		return 0;
+	}
 }

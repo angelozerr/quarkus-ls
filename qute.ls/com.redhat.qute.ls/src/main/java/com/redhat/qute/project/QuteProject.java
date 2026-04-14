@@ -187,6 +187,10 @@ public class QuteProject {
 
 	private final IncludeUsagesRegistry includeUsagesRegistry;
 
+	// Future for loading this project only (without waiting for dependencies)
+	private CompletableFuture<QuteProject> loadThisProjectOnlyFuture;
+
+	// Future for loading this project AND all its dependencies
 	private CompletableFuture<QuteProject> loadQuteProjectFuture;
 
 	public QuteProject(ProjectInfo projectInfo, QuteProjectRegistry projectRegistry) {
@@ -282,11 +286,25 @@ public class QuteProject {
 		return loadSync();
 	}
 
-	private synchronized CompletableFuture<QuteProject> loadSync() {
-		if (isQuteProjectLoaded()) {
-			return loadQuteProjectFuture;
+	/**
+	 * Loads only this project (without waiting for dependencies).
+	 * This is used internally by waitForDependencies() to avoid circular dependency deadlocks.
+	 */
+	synchronized CompletableFuture<QuteProject> loadThisProjectOnly() {
+		if (loadThisProjectOnlyFuture != null) {
+			return loadThisProjectOnlyFuture;
 		}
+		// Create loadThisProjectOnlyFuture without creating loadQuteProjectFuture
+		// to avoid triggering waitForDependencies recursively
+		createLoadThisProjectOnlyFuture();
+		return loadThisProjectOnlyFuture;
+	}
 
+	/**
+	 * Creates the future for loading this project only (without dependencies).
+	 * This is separated from loadSync() to avoid circular dependency issues.
+	 */
+	private void createLoadThisProjectOnlyFuture() {
 		ProgressSupport progressSupport = projectRegistry.getProgressSupportProvider().get();
 		ProgressContext progressContext = progressSupport != null ? new ProgressContext(progressSupport) : null;
 		String projectName = getUri();
@@ -300,7 +318,7 @@ public class QuteProject {
 			progressContext.report("Loading Qute binary templates for '" + projectName + "' Qute project.", 10);
 		}
 
-		loadQuteProjectFuture = this.getBinaryTemplates() //
+		loadThisProjectOnlyFuture = this.getBinaryTemplates() //
 				.thenCompose(binaryTemplates -> {
 					if (progressContext != null) {
 						progressContext.report("Loading Qute data model for '" + projectName + "' Qute project.", 20);
@@ -313,7 +331,7 @@ public class QuteProject {
 											"Loading Qute templates for '" + projectName + "' Qute project.", 40);
 								}
 
-								// Register use tags
+								// Register user tags
 								registerUserTags();
 
 								// Load closed templates
@@ -336,32 +354,48 @@ public class QuteProject {
 						progressContext.endProgress();
 					}
 					return this;
-				})
-				// Once this project is loaded, wait for its dependencies to be loaded too.
-				.thenCompose(self -> waitForDependencies(new HashSet<>()) //
-						.thenApply(_unused -> self));
+				});
+	}
+
+	private synchronized CompletableFuture<QuteProject> loadSync() {
+		if (isQuteProjectLoaded()) {
+			return loadQuteProjectFuture;
+		}
+
+		// Create the future for loading this project only (if not already created)
+		if (loadThisProjectOnlyFuture == null) {
+			createLoadThisProjectOnlyFuture();
+		}
+
+		// Create the future for loading this project AND its dependencies
+		loadQuteProjectFuture = loadThisProjectOnlyFuture
+				.thenCompose(self -> waitForDependencies(new HashSet<>()).thenApply(_unused -> self));
+
+		// Get progressContext from loadThisProjectOnlyFuture for validation callback
 		loadQuteProjectFuture.thenAccept(unused -> {
+			ProgressSupport progressSupport = projectRegistry.getProgressSupportProvider().get();
+			ProgressContext progressContext = progressSupport != null ? new ProgressContext(progressSupport) : null;
 			validateClosedTemplates(progressContext);
 		});
 		return loadQuteProjectFuture;
 	}
 
 	/**
-	 * Waits recursively for all project dependencies to be loaded. The
-	 * {@code visiting} set tracks ancestor project URIs in the current call chain
+	 * Waits recursively for all project dependencies (and their transitive dependencies) to be loaded.
+	 * The {@code visiting} set tracks ancestor project URIs in the current call chain
 	 * to detect and break circular dependency cycles.
 	 *
-	 * @param visiting the set of project URIs already being waited on in the
-	 *                 current recursion path.
+	 * @param visiting the set of project URIs already being waited on in the current recursion path.
 	 * @return a {@link CompletableFuture} that completes when all dependencies (and
-	 *         their own transitive dependencies) are loaded.
+	 *         their transitive dependencies) have loaded their own files.
 	 */
-	CompletableFuture<Void> waitForDependencies(Set<String> visiting) {
+	private CompletableFuture<Void> waitForDependencies(Set<String> visiting) {
 		// Snapshot to avoid concurrent modification
 		List<QuteProject> deps = new ArrayList<>(projectDependencies);
 		if (deps.isEmpty()) {
 			return CompletableFuture.completedFuture(null);
 		}
+
 		List<CompletableFuture<Void>> futures = new ArrayList<>();
 		for (QuteProject dep : deps) {
 			if (visiting.contains(dep.getUri())) {
@@ -370,17 +404,50 @@ public class QuteProject {
 						"Circular project dependency detected: '" + getUri() + "' -> '" + dep.getUri() + "' (skipped)");
 				continue;
 			}
+
+			// Add current project to visiting set for this branch
 			Set<String> childVisiting = new HashSet<>(visiting);
 			childVisiting.add(getUri());
-			CompletableFuture<Void> depFuture = dep.load()
-					.thenCompose(loadedDep -> loadedDep.waitForDependencies(childVisiting));
+
+			// Wait for dependency to load itself, then recursively wait for its dependencies
+			CompletableFuture<Void> depFuture = dep.loadThisProjectOnly()
+					.thenCompose(loadedDep -> waitForDependenciesRecursive(loadedDep, childVisiting));
 			futures.add(depFuture);
 		}
+
+		return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+	}
+
+	/**
+	 * Helper method to recursively wait for a project's dependencies.
+	 */
+	private static CompletableFuture<Void> waitForDependenciesRecursive(QuteProject project, Set<String> visiting) {
+		List<QuteProject> deps = new ArrayList<>(project.projectDependencies);
+		if (deps.isEmpty()) {
+			return CompletableFuture.completedFuture(null);
+		}
+
+		List<CompletableFuture<Void>> futures = new ArrayList<>();
+		for (QuteProject dep : deps) {
+			if (visiting.contains(dep.getUri())) {
+				continue; // Skip cycles
+			}
+
+			Set<String> childVisiting = new HashSet<>(visiting);
+			childVisiting.add(project.getUri());
+
+			CompletableFuture<Void> depFuture = dep.loadThisProjectOnly()
+					.thenCompose(loadedDep -> waitForDependenciesRecursive(loadedDep, childVisiting));
+			futures.add(depFuture);
+		}
+
 		return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
 	}
 
 	private boolean isQuteProjectLoaded() {
-		return isFutureLoaded(loadQuteProjectFuture);
+		// Check if loading has started (not necessarily finished)
+		// We use loadThisProjectOnlyFuture because it's created first
+		return isFutureLoaded(loadThisProjectOnlyFuture);
 	}
 
 	private static Set<Path> toSourcePaths(Set<String> sourceFolders) {
